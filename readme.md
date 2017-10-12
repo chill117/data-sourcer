@@ -8,7 +8,7 @@ Get (and filter) data from multiple different data sources quickly and efficient
 * [API](#api)
   * [getData](#getdata)
   * [listSources](#listsources)
-* [Defining Sources](#definingsources)
+* [Defining Sources](#defining-sources)
 * [Contributing](#contributing)
 * [Tests](#tests)
 

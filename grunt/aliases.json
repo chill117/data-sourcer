@@ -1,0 +1,9 @@
+{
+	"default": ["test"],
+	"test": [
+		"test:unit"
+	],
+	"test:unit": [
+		"mochaTest:unit"
+	]
+}

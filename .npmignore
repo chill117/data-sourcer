@@ -1,0 +1,6 @@
+.gitignore
+.npmignore
+.travis.yml
+grunt/
+test/
+gruntFile.js

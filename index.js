@@ -19,6 +19,18 @@ var DataSourcer = module.exports = function(options) {
 	if (this.options.sourcesDir) {
 		this.loadSourcesFromDir(this.options.sourcesDir);
 	}
+
+	if (this.options.requestQueue && this.options.requestQueue.concurrency) {
+		this.requestQueue = this.prepareRequestQueue(this.options.requestQueue);
+	}
+};
+
+DataSourcer.prototype.prepareRequestQueue = function(options) {
+	return async.queue(function(task, next) {
+		task.request.apply(task.request, task.arguments).on('response', function() {
+			_.delay(next, options.delay);
+		});
+	});
 };
 
 DataSourcer.prototype.prepareOptions = function(options) {
@@ -81,6 +93,20 @@ DataSourcer.prototype.prepareOptions = function(options) {
 		series: false,
 
 		/*
+			Use a queue to limit the number of simultaneous HTTP requests.
+		*/
+		requestQueue: {
+			/*
+				The maximum number of simultaneous requests. Set to 0 for unlimited.
+			*/
+			concurrency: 0,
+			/*
+				The time (in milliseconds) between each request. Set to 0 for no delay.
+			*/
+			delay: 0,
+		},
+
+		/*
 			Default request module options. For example you could pass the 'proxy' option in this way.
 
 			See for more info:
@@ -91,6 +117,7 @@ DataSourcer.prototype.prepareOptions = function(options) {
 
 	options = _.defaults(options || {}, defaultOptions);
 	options.filter = _.defaults(options.filter, defaultOptions.filter);
+	options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
 	return options;
 };
 
@@ -218,8 +245,8 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	var onData = _.bind(emitter.emit, emitter, 'data');
 	var onError = _.bind(emitter.emit, emitter, 'error');
 	var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
-	var optionsForSource = this.prepareOptionsForSource(options);
-	var gettingData = source.getData(optionsForSource);
+	var sourceOptions = this.prepareSourceOptions(options);
+	var gettingData = source.getData(sourceOptions);
 
 	gettingData.on('data', function(data) {
 
@@ -242,16 +269,34 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	return emitter;
 };
 
-DataSourcer.prototype.prepareOptionsForSource = function(options) {
+DataSourcer.prototype.prepareSourceOptions = function(options) {
 
-	// Deep clone the options object before passing to the source's getData method.
+	options = (options || {});
+
+	var sourceOptions = _.omit(options,
+		'sourcesWhiteList',
+		'sourcesBlackList',
+		'requestQueue',
+		'defaultRequestOptions'
+	);
+
+	// Deep clone the options object.
 	// This prevents mutating the original options object.
-	options = JSON.parse(JSON.stringify(options || {}));
+	sourceOptions = JSON.parse(JSON.stringify(sourceOptions || {}));
 
-	// Prepare request wrapper for the source.
-	options.request = request.defaults(options.defaultRequestOptions || {});
+	// Prepare request instance for the source.
+	var requestInstance = request.defaults(options.defaultRequestOptions || {});
 
-	return options;
+	if (this.requestQueue) {
+		var requestQueue = this.requestQueue;
+		sourceOptions.request = function() {
+			requestQueue.push({ request: requestInstance, arguments: arguments });
+		};
+	} else {
+		sourceOptions.request = requestInstance;
+	}
+
+	return sourceOptions;
 };
 
 DataSourcer.prototype.filterData = function(data, options) {

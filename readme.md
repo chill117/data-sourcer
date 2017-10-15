@@ -222,9 +222,9 @@ module.exports = {
 };
 ```
 
-Please note that there are a couple options that you should respect in within your data sources:
-* **sample** - `boolean` If `options.sample` is `true` then you should do your best to make the fewest number of HTTP requests to the data source but still get at least some real data. The purpose of this option is to reduce the strain caused by this module's unit tests on each data sources' servers.
-* **series** - `boolean` If `options.series` is `true` you should make sure that all asynchronous code in your source is run in series, NOT parallel. The purpose is to reduce the memory usage of the module so that it can be run in low-memory environments such as a VPS with 256MB of RAM.
+Please note that there are a couple options that you should respect within your data sources:
+* **sample** - `boolean` - If `options.sample` is `true` then you should do your best to make the fewest number of HTTP requests to the data source but still get at least some real data. The purpose of this option is to reduce the strain caused by this module's unit tests on each data sources' servers.
+* **series** - `boolean` - If `options.series` is `true` you should make sure that all asynchronous code in your source is run in series, NOT parallel. The purpose is to reduce the memory usage of the module so that it can be run in low-memory environments such as a VPS with 256MB of RAM.
 
 
 ## Contributing

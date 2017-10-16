@@ -13,29 +13,7 @@ var debug = {
 
 var DataSourcer = module.exports = function(options) {
 
-	this.options = this.prepareOptions(options);
-	this.sources = {};
-
-	if (this.options.sourcesDir) {
-		this.loadSourcesFromDir(this.options.sourcesDir);
-	}
-
-	if (this.options.requestQueue && this.options.requestQueue.concurrency) {
-		this.requestQueue = this.prepareRequestQueue(this.options.requestQueue);
-	}
-};
-
-DataSourcer.prototype.prepareRequestQueue = function(options) {
-	return async.queue(function(task, next) {
-		task.request.apply(task.request, task.arguments).on('response', function() {
-			_.delay(next, options.delay);
-		});
-	});
-};
-
-DataSourcer.prototype.prepareOptions = function(options) {
-
-	var defaultOptions = {
+	this.options = this.prepareOptions(options, {
 
 		/*
 			Directory from which sources will be loaded.
@@ -113,8 +91,25 @@ DataSourcer.prototype.prepareOptions = function(options) {
 			https://github.com/request/request#requestdefaultsoptions
 		*/
 		defaultRequestOptions: null,
-	};
+	});
 
+	this.sources = {};
+
+	if (this.options.sourcesDir) {
+		this.loadSourcesFromDir(this.options.sourcesDir);
+	}
+};
+
+DataSourcer.prototype.prepareRequestQueue = function(options) {
+	options = (options || {});
+	return async.queue(function(task, next) {
+		task.request.apply(task.request, task.arguments).on('response', function() {
+			_.delay(next, options.delay);
+		});
+	});
+};
+
+DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
 	options = _.defaults(options || {}, defaultOptions);
 	options.filter = _.defaults(options.filter, defaultOptions.filter);
 	options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
@@ -193,7 +188,7 @@ DataSourcer.prototype.listSources = function(options) {
 
 DataSourcer.prototype.getData = function(options) {
 
-	options = this.prepareOptions(options);
+	options = this.prepareOptions(options, this.options);
 
 	var emitter = new EventEmitter();
 	var sources = this.listSources(options);
@@ -229,7 +224,7 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 		throw new Error('Data source does not exist: "' + name + '"');
 	}
 
-	options = this.prepareOptions(options);
+	options = this.prepareOptions(options, this.options);
 
 	var source = this.sources[name];
 
@@ -287,8 +282,8 @@ DataSourcer.prototype.prepareSourceOptions = function(options) {
 	// Prepare request instance for the source.
 	var requestInstance = request.defaults(options.defaultRequestOptions || {});
 
-	if (this.requestQueue) {
-		var requestQueue = this.requestQueue;
+	if (options.requestQueue && options.requestQueue.concurrency) {
+		var requestQueue = this.prepareRequestQueue(options.requestQueue);
 		sourceOptions.request = function() {
 			requestQueue.push({ request: requestInstance, arguments: arguments });
 		};

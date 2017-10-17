@@ -319,9 +319,16 @@ DataSourcer.prototype.prepareFilters = function(options) {
 };
 
 DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
+	defaultOptions = (defaultOptions || {});
 	options = _.defaults(options || {}, defaultOptions);
-	options.filter = _.defaults(options.filter, defaultOptions.filter);
-	options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
+	if (!_.isUndefined(defaultOptions.filter)) {
+		options.filter = _.defaults(options.filter || {}, defaultOptions.filter || {});
+		options.filter.include = _.defaults(options.filter.include || {}, defaultOptions.filter.include || {});
+		options.filter.exclude = _.defaults(options.filter.exclude || {}, defaultOptions.filter.exclude || {});
+	}
+	if (!_.isUndefined(defaultOptions.requestQueue)) {
+		options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
+	}
 	return options;
 };
 

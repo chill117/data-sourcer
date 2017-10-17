@@ -100,36 +100,6 @@ var DataSourcer = module.exports = function(options) {
 	}
 };
 
-DataSourcer.prototype.prepareRequestQueue = function(options) {
-	options = (options || {});
-	return async.queue(function(task, next) {
-		task.request.apply(task.request, task.arguments).on('response', function() {
-			_.delay(next, options.delay);
-		});
-	});
-};
-
-DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
-	options = _.defaults(options || {}, defaultOptions);
-	options.filter = _.defaults(options.filter, defaultOptions.filter);
-	options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
-	return options;
-};
-
-DataSourcer.prototype.loadSourcesFromDir = function(dirPath) {
-	var files = fs.readdirSync(dirPath);
-	_.each(files, function(file) {
-		var filePath = path.join(dirPath, file);
-		this.loadSourceFromFile(filePath);
-	}, this);
-};
-
-DataSourcer.prototype.loadSourceFromFile = function(filePath) {
-	var source = require(filePath);
-	var name = path.basename(filePath, '.js');
-	this.addSource(name, source);
-};
-
 DataSourcer.prototype.addSource = function(name, source) {
 
 	if (!this.isValidSourceName(name)) {
@@ -151,39 +121,67 @@ DataSourcer.prototype.addSource = function(name, source) {
 	this.sources[name] = source;
 };
 
-DataSourcer.prototype.isValidSourceName = function(name) {
-	return _.isString(name) && name.length > 0;
+DataSourcer.prototype.arrayToObjectHash = function(array) {
+	return _.object(_.map(array, function(value) {
+		return [value, true];
+	}));
 };
 
-DataSourcer.prototype.sourceExists = function(name) {
-	return _.has(this.sources, name);
-};
-
-DataSourcer.prototype.listSources = function(options) {
+DataSourcer.prototype.filterData = function(data, options) {
 
 	options || (options = {});
 
-	var sourcesWhiteList = options.sourcesWhiteList && this.arrayToObjectHash(options.sourcesWhiteList);
-	var sourcesBlackList = options.sourcesBlackList && this.arrayToObjectHash(options.sourcesBlackList);
+	var filters = this.prepareFilters(options.filter);
+	var strict = options.filterMode === 'strict';
 
-	// Get an array of source names filtered by the options.
-	var sourceNames = _.filter(_.keys(this.sources), function(name) {
-		if (sourcesWhiteList) return sourcesWhiteList[name];
-		if (sourcesBlackList) return !sourcesBlackList[name];
+	return _.filter(data, function(item) {
+
+		if (!item || !_.isObject(item)) {
+			return false;
+		}
+
+		var passedInclude = _.every(filters.include, function(field, test) {
+
+			if (!test || (!strict && !item[field])) {
+				// Ignore this test.
+				return true;
+			}
+
+			if (_.isArray(item[field])) {
+				return _.some(item[fields], function(value) {
+					return !!test[value];
+				});
+			}
+
+			return !!test[item[field]];
+		});
+
+		if (!passedInclude) {
+			return false;
+		}
+
+		var passedExclude = _.every(filters.exclude, function(field, test) {
+
+			if (!test || (!strict && !item[field])) {
+				// Ignore this test.
+				return true;
+			}
+
+			if (_.isArray(item[field])) {
+				return _.every(item[fields], function(value) {
+					return !test[value];
+				});
+			}
+
+			return !test[item[field]];
+		});
+
+		if (!passedExclude) {
+			return false;
+		}
+
 		return true;
 	});
-
-	return _.map(sourceNames, function(name) {
-
-		var source = this.sources[name];
-
-		return {
-			name: name,
-			homeUrl: source.homeUrl || '',
-			requiredOptions: source.requiredOptions || {}
-		};
-
-	}, this);
 };
 
 DataSourcer.prototype.getData = function(options) {
@@ -264,6 +262,78 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	return emitter;
 };
 
+DataSourcer.prototype.isValidSourceName = function(name) {
+	return _.isString(name) && name.length > 0;
+};
+
+DataSourcer.prototype.listSources = function(options) {
+
+	options || (options = {});
+
+	var sourcesWhiteList = options.sourcesWhiteList && this.arrayToObjectHash(options.sourcesWhiteList);
+	var sourcesBlackList = options.sourcesBlackList && this.arrayToObjectHash(options.sourcesBlackList);
+
+	// Get an array of source names filtered by the options.
+	var sourceNames = _.filter(_.keys(this.sources), function(name) {
+		if (sourcesWhiteList) return sourcesWhiteList[name];
+		if (sourcesBlackList) return !sourcesBlackList[name];
+		return true;
+	});
+
+	return _.map(sourceNames, function(name) {
+
+		var source = this.sources[name];
+
+		return {
+			name: name,
+			homeUrl: source.homeUrl || '',
+			requiredOptions: source.requiredOptions || {}
+		};
+
+	}, this);
+};
+
+DataSourcer.prototype.loadSourcesFromDir = function(dirPath) {
+	var files = fs.readdirSync(dirPath);
+	_.each(files, function(file) {
+		var filePath = path.join(dirPath, file);
+		this.loadSourceFromFile(filePath);
+	}, this);
+};
+
+DataSourcer.prototype.loadSourceFromFile = function(filePath) {
+	var source = require(filePath);
+	var name = path.basename(filePath, '.js');
+	this.addSource(name, source);
+};
+
+DataSourcer.prototype.prepareFilters = function(options) {
+
+	options || (options = {});
+
+	var arrayToObjectHash = this.arrayToObjectHash.bind(this);
+
+	return _.object(_.map(['include', 'exclude'], function(type) {
+		return [type, arrayToObjectHash(options[type] || {})];
+	}));
+};
+
+DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
+	options = _.defaults(options || {}, defaultOptions);
+	options.filter = _.defaults(options.filter, defaultOptions.filter);
+	options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
+	return options;
+};
+
+DataSourcer.prototype.prepareRequestQueue = function(options) {
+	options = (options || {});
+	return async.queue(function(task, next) {
+		task.request.apply(task.request, task.arguments).on('response', function() {
+			_.delay(next, options.delay);
+		});
+	});
+};
+
 DataSourcer.prototype.prepareSourceOptions = function(options) {
 
 	options = (options || {});
@@ -294,76 +364,6 @@ DataSourcer.prototype.prepareSourceOptions = function(options) {
 	return sourceOptions;
 };
 
-DataSourcer.prototype.filterData = function(data, options) {
-
-	options || (options = {});
-
-	var filters = this.prepareFilters(options.filter);
-	var strict = options.filterMode === 'strict';
-
-	return _.filter(data, function(item) {
-
-		if (!item || !_.isObject(item)) {
-			return false;
-		}
-
-		var passedInclude = _.every(filters.include, function(field, test) {
-
-			if (!test || (!strict && !item[field])) {
-				// Ignore this test.
-				return true;
-			}
-
-			if (_.isArray(item[field])) {
-				return _.some(item[fields], function(value) {
-					return !!test[value];
-				});
-			}
-
-			return !!test[item[field]];
-		});
-
-		if (!passedInclude) {
-			return false;
-		}
-
-		var passedExclude = _.every(filters.exclude, function(field, test) {
-
-			if (!test || (!strict && !item[field])) {
-				// Ignore this test.
-				return true;
-			}
-
-			if (_.isArray(item[field])) {
-				return _.every(item[fields], function(value) {
-					return !test[value];
-				});
-			}
-
-			return !test[item[field]];
-		});
-
-		if (!passedExclude) {
-			return false;
-		}
-
-		return true;
-	});
-};
-
-DataSourcer.prototype.prepareFilters = function(options) {
-
-	options || (options = {});
-
-	var arrayToObjectHash = this.arrayToObjectHash.bind(this);
-
-	return _.object(_.map(['include', 'exclude'], function(type) {
-		return [type, arrayToObjectHash(options[type] || {})];
-	}));
-};
-
-DataSourcer.prototype.arrayToObjectHash = function(array) {
-	return _.object(_.map(array, function(value) {
-		return [value, true];
-	}));
+DataSourcer.prototype.sourceExists = function(name) {
+	return _.has(this.sources, name);
 };

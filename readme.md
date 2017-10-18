@@ -40,8 +40,8 @@ var myDataSourcer = new DataSourcer({
 	sourcesDir: 'path-to-your-sources-directory'
 });
 
-// `gettingData` is an event emitter object.
-var gettingData = myDataSourcer.getData({
+// getData() returns an event emitter object.
+myDataSourcer.getData({
 	series: true,
 	filter: {
 		mode: 'stict',
@@ -49,22 +49,19 @@ var gettingData = myDataSourcer.getData({
 			someField: ['1']
 		}
 	}
-});
-
-gettingData.on('data', function(data) {
-	// Received some data.
-	console.log(data);
-});
-
-gettingData.on('error', function(error) {
-	// Some error has occurred.
-	console.error(error);
-});
-
-gettingData.once('end', function() {
-	// Done getting data.
-	console.log('Done!');
-});
+})
+	.on('data', function(data) {
+		// Received some data.
+		console.log(data);
+	})
+	.on('error', function(error) {
+		// Some error has occurred.
+		console.error(error);
+	})
+	.once('end', function() {
+		// Done getting data.
+		console.log('Done!');
+	});
 ```
 
 
@@ -125,6 +122,20 @@ var options = {
 		Set to TRUE to have all asynchronous operations run in series.
 	*/
 	series: false,
+
+	/*
+		Use a queue to limit the number of simultaneous HTTP requests.
+	*/
+	requestQueue: {
+		/*
+			The maximum number of simultaneous requests. Set to 0 for unlimited.
+		*/
+		concurrency: 0,
+		/*
+			The time (in milliseconds) between each request. Set to 0 for no delay.
+		*/
+		delay: 0,
+	},
 
 	/*
 		Default request module options. For example you could pass the 'proxy' option in this way.
@@ -192,7 +203,7 @@ var options = {
 
 ## Defining Sources
 
-Each of your data sources should be a separate JavaScript file. You are only required to define a `getData(options)` method, which should return an event emitter. See the following sample for more details:
+Each of your data sources should be a separate JavaScript file to be included via node's `require()` method. You are only required to define a `getData(options)` method, which should return an event emitter. See the following sample for more details:
 ```js
 // Core nodejs module.
 // See https://nodejs.org/api/events.html
@@ -222,9 +233,10 @@ module.exports = {
 };
 ```
 
-Please note that there are a couple options that you should respect within your data sources:
-* **sample** - `boolean` - If `options.sample` is `true` then you should do your best to make the fewest number of HTTP requests to the data source but still get at least some real data. The purpose of this option is to reduce the strain caused by this module's unit tests on each data sources' servers.
-* **series** - `boolean` - If `options.series` is `true` you should make sure that all asynchronous code in your source is run in series, NOT parallel. The purpose is to reduce the memory usage of the module so that it can be run in low-memory environments such as a VPS with 256MB of RAM.
+Options that are passed to your sources:
+* __filter__ - `object` - Passed through from the options that you provide the `getData` function.
+* __request__ - `function` - Instance of the [request](https://github.com/request/request#super-simple-to-use) module with the default options you provided via `defaultRequestOptions`. Requests made via the `options.request` instance are queued if using the `requestQueue` option.
+* __series__ - `boolean` - Passed through from the options that you provide the `getData` function.
 
 
 ## Contributing

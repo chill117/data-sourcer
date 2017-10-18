@@ -1,7 +1,7 @@
 {
   "name": "data-sourcer",
-  "version": "0.0.1",
-  "description": "Generalized data sources manager.",
+  "version": "1.0.0",
+  "description": "Get (and filter) data from multiple different data sources quickly and efficiently.",
   "main": "index.js",
   "scripts": {
     "test": "grunt test"

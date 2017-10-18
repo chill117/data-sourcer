@@ -334,12 +334,15 @@ DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
 };
 
 DataSourcer.prototype.prepareRequestQueue = function(options) {
-	options = (options || {});
+	options = _.defaults(options || {}, {
+		concurrency: 0,
+		delay: 0
+	});
 	return async.queue(function(task, next) {
-		task.request.apply(task.request, task.arguments).on('response', function() {
+		task.fn.apply(task.fn, task.arguments).on('response', function() {
 			_.delay(next, options.delay);
 		});
-	});
+	}, options.concurrency);
 };
 
 DataSourcer.prototype.prepareSourceOptions = function(options) {
@@ -363,7 +366,7 @@ DataSourcer.prototype.prepareSourceOptions = function(options) {
 	if (options.requestQueue && options.requestQueue.concurrency) {
 		var requestQueue = this.prepareRequestQueue(options.requestQueue);
 		sourceOptions.request = function() {
-			requestQueue.push({ request: requestInstance, arguments: arguments });
+			requestQueue.push({ fn: requestInstance, arguments: arguments });
 		};
 	} else {
 		sourceOptions.request = requestInstance;

@@ -131,8 +131,7 @@ DataSourcer.prototype.filterData = function(data, options) {
 
 	options || (options = {});
 
-	var filters = this.prepareFilters(options.filter);
-	var strict = options.filterMode === 'strict';
+	var strict = options.mode === 'strict';
 
 	return _.filter(data, function(item) {
 
@@ -140,7 +139,7 @@ DataSourcer.prototype.filterData = function(data, options) {
 			return false;
 		}
 
-		var passedInclude = _.every(filters.include, function(field, test) {
+		var passedInclude = !options.include || _.every(options.include, function(test, field) {
 
 			if (!test || (!strict && !item[field])) {
 				// Ignore this test.
@@ -148,11 +147,10 @@ DataSourcer.prototype.filterData = function(data, options) {
 			}
 
 			if (_.isArray(item[field])) {
-				return _.some(item[fields], function(value) {
+				return _.some(item[field], function(value) {
 					return !!test[value];
 				});
 			}
-
 			return !!test[item[field]];
 		});
 
@@ -160,7 +158,7 @@ DataSourcer.prototype.filterData = function(data, options) {
 			return false;
 		}
 
-		var passedExclude = _.every(filters.exclude, function(field, test) {
+		var passedExclude = !options.exclude || _.every(options.exclude, function(test, field) {
 
 			if (!test || (!strict && !item[field])) {
 				// Ignore this test.
@@ -168,7 +166,7 @@ DataSourcer.prototype.filterData = function(data, options) {
 			}
 
 			if (_.isArray(item[field])) {
-				return _.every(item[fields], function(value) {
+				return _.every(item[field], function(value) {
 					return !test[value];
 				});
 			}
@@ -239,12 +237,13 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	var onError = _.bind(emitter.emit, emitter, 'error');
 	var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
 	var sourceOptions = this.prepareSourceOptions(options);
+	var filterOptions = this.prepareFilterOptions(options.filter);
 	var gettingData = source.getData(sourceOptions);
 
 	gettingData.on('data', function(data) {
 
 		data || (data = []);
-		data = this.filterData(data, options);
+		data = this.filterData(data, filterOptions);
 
 		// Add the 'source' attribute to every item.
 		data = _.map(data, function(item) {
@@ -307,15 +306,17 @@ DataSourcer.prototype.loadSourceFromFile = function(filePath) {
 	this.addSource(name, source);
 };
 
-DataSourcer.prototype.prepareFilters = function(options) {
-
-	options || (options = {});
-
+DataSourcer.prototype.prepareFilterOptions = function(options) {
+	var filterOptions = _.defaults(options || {}, {
+		mode: 'strict'
+	});
 	var arrayToObjectHash = this.arrayToObjectHash.bind(this);
-
-	return _.object(_.map(['include', 'exclude'], function(type) {
-		return [type, arrayToObjectHash(options[type] || {})];
-	}));
+	_.each(['include', 'exclude'], function(type) {
+		filterOptions[type] = _.mapObject(filterOptions[type], function(values) {
+			return arrayToObjectHash(values);
+		});
+	});
+	return filterOptions;
 };
 
 DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {

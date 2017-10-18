@@ -2,39 +2,27 @@
 
 var _ = require('underscore');
 var expect = require('chai').expect;
-var fs = require('fs');
-var path = require('path');
 
 var DataSourcer = require('../../index');
 
 describe('listSources([options])', function() {
 
-	var testSourcesDir;
-	var testDataSourcer;
+	var dataSourcer;
+	var numTestSources = 3;
 
 	before(function() {
-		testSourcesDir = path.join(__dirname, '..', 'sources');
-		testDataSourcer = new DataSourcer({
-			sourcesDir: testSourcesDir
-		});
-	});
-
-	var numTestSources;
-
-	before(function(done) {
-		fs.readdir(testSourcesDir, function(error, files) {
-			if (error) return done(error);
-			numTestSources = files.length;
-			done();
-		});
+		dataSourcer = new DataSourcer();
+		dataSourcer.addSource('somewhere', { homeUrl: 'https://somewhere', getData: function() {} });
+		dataSourcer.addSource('somewhere-else', { homeUrl: 'https://somewhere-else', getData: function() {} });
+		dataSourcer.addSource('other', { homeUrl: 'https://other', getData: function() {} });
 	});
 
 	it('should be a function', function() {
-		expect(testDataSourcer.listSources).to.be.a('function');
+		expect(dataSourcer.listSources).to.be.a('function');
 	});
 
 	it('should return an array of all sources', function() {
-		var sources = testDataSourcer.listSources();
+		var sources = dataSourcer.listSources();
 		expect(sources).to.be.an('array');
 		expect(sources).to.have.length(numTestSources);
 		_.each(sources, function(source) {
@@ -52,11 +40,12 @@ describe('listSources([options])', function() {
 
 				var sourcesWhiteLists = [
 					[],
-					['test-source-1']
+					['somewhere'],
+					['somewhere', 'other']
 				];
 
 				_.each(sourcesWhiteLists, function(sourcesWhiteList) {
-					var sources = testDataSourcer.listSources({ sourcesWhiteList: sourcesWhiteList });
+					var sources = dataSourcer.listSources({ sourcesWhiteList: sourcesWhiteList });
 					expect(sources).to.be.an('array');
 					expect(sources).to.have.length(sourcesWhiteList.length);
 					_.each(sources, function(source) {
@@ -72,11 +61,12 @@ describe('listSources([options])', function() {
 
 				var sourcesBlackLists = [
 					[],
-					['test-source-1']
+					['somewhere-else'],
+					['other', 'somewhere']
 				];
 
 				_.each(sourcesBlackLists, function(sourcesBlackList) {
-					var sources = testDataSourcer.listSources({ sourcesBlackList: sourcesBlackList });
+					var sources = dataSourcer.listSources({ sourcesBlackList: sourcesBlackList });
 					expect(sources).to.be.an('array');
 					expect(sources).to.have.length(numTestSources - sourcesBlackList.length);
 					_.each(sources, function(source) {

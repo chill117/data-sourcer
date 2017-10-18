@@ -4,7 +4,7 @@ var expect = require('chai').expect;
 
 var DataSourcer = require('../../index');
 
-describe('prepareFilterOptions(options)', function() {
+describe('prepareFilterOptions([options])', function() {
 
 	var dataSourcer;
 

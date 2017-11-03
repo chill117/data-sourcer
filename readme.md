@@ -68,10 +68,6 @@ myDataSourcer.getData({
 All available options:
 ```js
 var options = {
-	/*
-		Directory from which sources will be loaded.
-	*/
-	sourcesDir: null,
 
 	filter: {
 		/*
@@ -210,22 +206,63 @@ Each of your data sources should be a separate JavaScript file to be included vi
 var EventEmitter = require('events').EventEmitter || require('events');
 
 module.exports = {
+	/*
+		The home URL for this source. Used as a reference only.
+
+		[optional]
+	*/
 	homeUrl: 'https://somewhere.com',
+
+	/*
+		Defines the options that are required to use this source.
+
+		This source is skipped and warnings are displayed if any of these required options are missing.
+
+		Example usage with required options:
+
+			var DataSourcer = require('data-sourcer');
+
+			var myDataSourcer = new DataSourcer({
+				sourcesDir: 'path-to-your-sources-directory'
+			});
+
+			myDataSourcer.getData({
+				sourceOptions: {
+					somewhere: {
+						apiKey: 'some-api-key'
+					}
+				}
+			});
+
+		[optional]
+	*/
+	requiredOptions: {
+		apiKey: 'You can get an API key for this service by creating an account at https://somewhere.com'
+	},
+
+	/*
+		The method that is called whenever `dataSourcer.getData()` is called.
+
+		[required]
+	*/
 	getData: function(options) {
 
 		var emitter = new EventEmitter();
 
-		// When an error occurs, use the 'error' event.
-		// The 'error' event can be emitted more than once.
-		emitter.emit('error', new Error('Something bad happened!'));
+		// Defer emitting events until the emitter has been returned.
+		_.defer(function() {
+			// When an error occurs, use the 'error' event.
+			// The 'error' event can be emitted more than once.
+			emitter.emit('error', new Error('Something bad happened!'));
 
-		// When data is ready, use the 'data' event.
-		// The 'data' event can be emitted more than once.
-		emitter.emit('data', data);
+			// When data is ready, use the 'data' event.
+			// The 'data' event can be emitted more than once.
+			emitter.emit('data', data);
 
-		// When done getting data, emit the 'end' event.
-		// The 'end' event should be emitted once.
-		emitter.emit('end');
+			// When done getting data, emit the 'end' event.
+			// The 'end' event should be emitted once.
+			emitter.emit('end');
+		});
 
 		// Must return an event emitter.
 		return emitter;
@@ -237,6 +274,7 @@ Options that are passed to your sources:
 * __filter__ - `object` - Passed through from the options that you provide the `getData` function.
 * __request__ - `function` - Instance of the [request](https://github.com/request/request#super-simple-to-use) module with the default options you provided via `defaultRequestOptions`. Requests made via the `options.request` instance are queued if using the `requestQueue` option.
 * __series__ - `boolean` - Passed through from the options that you provide the `getData` function.
+* __the-source-name__ `object` - These are custom options that should be passed through to a source by name. You can use the `requiredOptions` source attribute to define which options are required for your source to run properly. Some example of a required option would be an API key or secret for some third-party web API.
 
 
 ## Contributing

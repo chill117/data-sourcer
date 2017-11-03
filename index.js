@@ -7,6 +7,10 @@ var fs = require('fs');
 var path = require('path');
 var request = require('request');
 
+var debug = {
+	error: require('debug')('data-sourcer:error'),
+};
+
 var DataSourcer = module.exports = function(options) {
 
 	this.options = this.prepareOptions(options, {
@@ -304,9 +308,15 @@ DataSourcer.prototype.loadSourcesFromDir = function(dirPath) {
 };
 
 DataSourcer.prototype.loadSourceFromFile = function(filePath) {
-	var source = require(filePath);
-	var name = path.basename(filePath, '.js');
-	this.addSource(name, source);
+	try {
+		var name = path.basename(filePath, '.js');
+		var source = require(filePath);
+		this.addSource(name, source);
+	} catch (error) {
+		debug.error(error);
+		return false;
+	}
+	return true;
 };
 
 DataSourcer.prototype.prepareFilterOptions = function(options) {

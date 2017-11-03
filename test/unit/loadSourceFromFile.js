@@ -49,16 +49,15 @@ describe('loadSourceFromFile(filePath)', function() {
 		expect(dataSourcer.loadSourceFromFile).to.be.a('function');
 	});
 
-	it('should throw an error when the file does not exist', function() {
-		var thrownError;
-		try {
-			var filePath = path.join(sourcesDir, 'does-not-exist.js');
-			dataSourcer.loadSourceFromFile(filePath);
-		} catch (error) {
-			thrownError = error;
-		}
-		expect(thrownError).to.not.be.undefined;
-		expect(thrownError.message.indexOf('Cannot find module') !== -1).to.equal(true);
+	it('should return FALSE when the file does not exist', function() {
+		var filePath = path.join(sourcesDir, 'does-not-exist.js');
+		var result = dataSourcer.loadSourceFromFile(filePath);
+		expect(result).to.equal(false);
+	});
+
+	it('should return TRUE when successful', function() {
+		var result = dataSourcer.loadSourceFromFile(sourceFilePath);
+		expect(result).to.equal(true);
 	});
 
 	it('should load the sources in the given directory', function() {

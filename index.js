@@ -7,10 +7,6 @@ var fs = require('fs');
 var path = require('path');
 var request = require('request');
 
-var debug = {
-	error: require('debug')('data-sourcer:error'),
-};
-
 var DataSourcer = module.exports = function(options) {
 
 	this.options = this.prepareOptions(options, {
@@ -184,31 +180,34 @@ DataSourcer.prototype.filterData = function(data, options) {
 
 DataSourcer.prototype.getData = function(options) {
 
-	options = this.prepareOptions(options, this.options);
-
 	var emitter = new EventEmitter();
-	var sources = this.listSources(options);
-	var asyncMethod = options.series === true ? 'eachSeries' : 'each';
-	var onData = _.bind(emitter.emit, emitter, 'data');
-	var onError = _.bind(emitter.emit, emitter, 'error');
-	var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
 
-	async[asyncMethod](sources, _.bind(function(source, next) {
+	_.defer(function() {
 
-		try {
-			var gettingData = this.getDataFromSource(source.name, options);
-		} catch (error) {
-			// Log the error (for debugging).
-			debug.error(error);
-			// Execute the callback without an error, to continue getting data from other sources.
-			return next();
-		}
+		options = this.prepareOptions(options, this.options);
 
-		gettingData.on('data', onData);
-		gettingData.on('error', onError);
-		gettingData.on('end', _.once(_.bind(next, undefined, null)));
+		var sources = this.listSources(options);
+		var asyncMethod = options.series === true ? 'eachSeries' : 'each';
+		var onData = _.bind(emitter.emit, emitter, 'data');
+		var onError = _.bind(emitter.emit, emitter, 'error');
+		var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
+		var getDataFromSource = this.getDataFromSource.bind(this);
 
-	}, this), onEnd);
+		async[asyncMethod](sources, function(source, next) {
+
+			try {
+				getDataFromSource(source.name, options)
+					.on('data', onData)
+					.on('error', onError)
+					.on('end', next.bind(undefined, null));
+			} catch (error) {
+				onError(error);
+				next();
+			}
+
+		}, onEnd);
+
+	}.bind(this));
 
 	return emitter;
 };
@@ -233,30 +232,34 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	}
 
 	var emitter = new EventEmitter();
-	var onData = _.bind(emitter.emit, emitter, 'data');
-	var onError = _.bind(emitter.emit, emitter, 'error');
-	var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
-	var sourceOptions = this.prepareSourceOptions(options);
-	var filterOptions = this.prepareFilterOptions(options.filter);
-	var gettingData = source.getData(sourceOptions);
 
-	gettingData.on('data', function(data) {
+	_.defer(function() {
 
-		data || (data = []);
-		data = this.filterData(data, filterOptions);
+		var onData = _.bind(emitter.emit, emitter, 'data');
+		var onError = _.bind(emitter.emit, emitter, 'error');
+		var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
+		var sourceOptions = this.prepareSourceOptions(options);
+		var filterOptions = this.prepareFilterOptions(options.filter);
+		var filterData = this.filterData.bind(this);
 
-		// Add the 'source' attribute to every item.
-		data = _.map(data, function(item) {
-			item.source = name;
-			return item;
-		});
+		source.getData(sourceOptions)
+			.on('data', function(data) {
 
-		onData(data);
+				data || (data = []);
+				data = filterData(data, filterOptions);
+
+				// Add the 'source' attribute to every item.
+				data = _.map(data, function(item) {
+					item.source = name;
+					return item;
+				});
+
+				onData(data);
+			})
+			.on('error', onError)
+			.once('end', onEnd);
 
 	}.bind(this));
-
-	gettingData.on('error', onError);
-	gettingData.once('end', onEnd);
 
 	return emitter;
 };

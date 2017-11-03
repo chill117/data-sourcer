@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "async": "2.5.0",
-    "debug": "3.1.0",
     "request": "2.83.0",
     "underscore": "1.8.3"
   },

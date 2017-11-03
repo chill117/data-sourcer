@@ -147,4 +147,33 @@ describe('getData([options])', function() {
 			});
 		});
 	});
+
+	describe('requiredOptions', function() {
+
+		it('should receive error event when a source is missing required options', function(done) {
+
+			var name = 'has-required-options';
+			var requiredOptions = {
+				something: 'This is a required option!'
+			};
+
+			dataSourcer.addSource(name, {
+				requiredOptions: requiredOptions,
+				getData: function() {
+					var emitter = new EventEmitter();
+					return emitter;
+				}
+			});
+
+			done = _.once(done);
+
+			dataSourcer.getData()
+				.on('error', function() {
+					done();
+				})
+				.once('end', function() {
+					done(new Error('Expected an error event.'));
+				});
+		});
+	});
 });

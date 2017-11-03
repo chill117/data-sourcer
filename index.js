@@ -229,7 +229,12 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 
 	if (source.requiredOptions) {
 		_.each(source.requiredOptions, function(message, key) {
-			if (!options[name] || !_.isObject(options[name]) || !options[name][key]) {
+			if (
+				_.isEmpty(options.sourceOptions) ||
+				!options.sourceOptions[name] ||
+				!_.isObject(options.sourceOptions[name]) ||
+				_.isUndefined(options.sourceOptions[name][key])
+			) {
 				throw new Error('Missing required option (`option.' + name + '.' + key + '`): ' + message);
 			}
 		});
@@ -242,7 +247,7 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 		var onData = _.bind(emitter.emit, emitter, 'data');
 		var onError = _.bind(emitter.emit, emitter, 'error');
 		var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
-		var sourceOptions = this.prepareSourceOptions(options);
+		var sourceOptions = this.prepareSourceOptions(name, options);
 		var filterOptions = this.prepareFilterOptions(options.filter);
 		var filterData = this.filterData.bind(this);
 
@@ -358,7 +363,7 @@ DataSourcer.prototype.prepareRequestQueue = function(options) {
 	}, options.concurrency);
 };
 
-DataSourcer.prototype.prepareSourceOptions = function(options) {
+DataSourcer.prototype.prepareSourceOptions = function(name, options) {
 
 	options = (options || {});
 
@@ -372,6 +377,9 @@ DataSourcer.prototype.prepareSourceOptions = function(options) {
 	// Deep clone the options object.
 	// This prevents mutating the original options object.
 	sourceOptions = JSON.parse(JSON.stringify(sourceOptions || {}));
+
+	// Only include the sourceOptions for this source.
+	sourceOptions.sourceOptions = _.pick(sourceOptions.sourceOptions || {}, name);
 
 	// Prepare request instance for the source.
 	var requestInstance = request.defaults(options.defaultRequestOptions || {});

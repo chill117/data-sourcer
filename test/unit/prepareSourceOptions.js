@@ -4,7 +4,7 @@ var expect = require('chai').expect;
 
 var DataSourcer = require('../../index');
 
-describe('prepareSourceOptions([options])', function() {
+describe('prepareSourceOptions(name[, options])', function() {
 
 	var dataSourcer;
 
@@ -18,6 +18,7 @@ describe('prepareSourceOptions([options])', function() {
 
 	it('should return an options object for a source', function() {
 
+		var name = 'somewhere';
 		var options = {
 			sourcesWhiteList: [ 'somewhere' ],
 			sourcesBlackList: [ 'other' ],
@@ -29,10 +30,18 @@ describe('prepareSourceOptions([options])', function() {
 				include: {
 					someField: ['1']
 				}
+			},
+			sourceOptions: {
+				somewhere: {
+					some: 'option'
+				},
+				another: {
+					option: 1
+				}
 			}
 		};
 
-		var sourceOptions = dataSourcer.prepareSourceOptions(options);
+		var sourceOptions = dataSourcer.prepareSourceOptions(name, options);
 
 		// Check for options that should have been omitted.
 		expect(sourceOptions.sourcesWhiteList).to.be.undefined;
@@ -49,5 +58,10 @@ describe('prepareSourceOptions([options])', function() {
 		sourceOptions.test = 'change';
 		sourceOptions.filter.include.someField = ['2'];
 		expect(sourceOptions.filter.include.someField).to.not.deep.equal(options.filter.include.someField);
+
+		// Check for name-spaced sourceOptions.
+		expect(sourceOptions.sourceOptions).to.not.be.undefined;
+		expect(sourceOptions.sourceOptions['somewhere']).to.not.be.undefined;
+		expect(sourceOptions.sourceOptions['another']).to.be.undefined;
 	});
 });

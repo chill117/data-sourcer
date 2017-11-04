@@ -274,7 +274,7 @@ Options that are passed to your sources:
 * __filter__ - `object` - Passed through from the options that you provide the `getData` function.
 * __request__ - `function` - Instance of the [request](https://github.com/request/request#super-simple-to-use) module with the default options you provided via `defaultRequestOptions`. Requests made via the `options.request` instance are queued if using the `requestQueue` option.
 * __series__ - `boolean` - Passed through from the options that you provide the `getData` function.
-* __the-source-name__ `object` - These are custom options that should be passed through to a source by name. You can use the `requiredOptions` source attribute to define which options are required for your source to run properly. Some example of a required option would be an API key or secret for some third-party web API.
+* __sourceOptions__ `object` - These are custom source options which are passed through to your source by name. You can use the `requiredOptions` source attribute to define which options are required for your source to run properly. Some example of a required option would be an API key or secret for some third-party web API.
 
 
 ## Contributing

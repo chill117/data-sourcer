@@ -293,3 +293,9 @@ To run all tests:
 ```
 grunt test
 ```
+
+
+## License
+
+This software is [MIT licensed](https://tldrlegal.com/license/mit-license):
+> A short, permissive software license. Basically, you can do whatever you want as long as you include the original copyright and license notice in any copy of the software/source.  There are many variations of this license in use.

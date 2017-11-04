@@ -235,7 +235,7 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 				!_.isObject(options.sourceOptions[name]) ||
 				_.isUndefined(options.sourceOptions[name][key])
 			) {
-				throw new Error('Missing required option (`option.' + name + '.' + key + '`): ' + message);
+				throw new Error('Missing required option (`option.sourceOptions.' + name + '.' + key + '`): ' + message);
 			}
 		});
 	}

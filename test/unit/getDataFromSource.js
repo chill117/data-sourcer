@@ -68,7 +68,7 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 			}
 
 			expect(thrownError).to.not.be.undefined;
-			expect(thrownError.message).to.equal('Missing required option (`option.' + name + '.something`): ' + requiredOptions.something);
+			expect(thrownError.message).to.equal('Missing required option (`option.sourceOptions.' + name + '.something`): ' + requiredOptions.something);
 		});
 	});
 });

@@ -20,6 +20,11 @@ var DataSourcer = module.exports = function(options) {
 		*/
 		sourcesDir: null,
 
+		/*
+			The method name used to get data from a source. Required for each source.
+		*/
+		getDataMethodName: 'getData',
+
 		filter: {
 			/*
 				The filter mode determines how some options will be used to exclude data.
@@ -114,8 +119,9 @@ DataSourcer.prototype.addSource = function(name, source) {
 		throw new Error('Expected "source" to be an object.');
 	}
 
-	if (!source.getData || !_.isFunction(source.getData)) {
-		throw new Error('Source missing required "getData" method.');
+	var getData = source[this.options.getDataMethodName];
+	if (!getData || !_.isFunction(getData)) {
+		throw new Error('Source missing required method: "' + this.options.getDataMethodName + '"');
 	}
 
 	this.sources[name] = source;
@@ -240,35 +246,38 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 		});
 	}
 
+	var sourceOptions = this.prepareSourceOptions(name, options);
+	var filterOptions = this.prepareFilterOptions(options.filter);
+	var filterData = this.filterData.bind(this);
+	var getData = source[this.options.getDataMethodName].bind(source);
+	var gettingDataEmitter = getData(sourceOptions);
+
+	if (!(gettingDataEmitter instanceof EventEmitter)) {
+		throw new Error('Expected source\'s ("' + name + '") ' + this.options.getDataMethodName + ' method to return an instance of the event emitter class.');
+	}
+
 	var emitter = new EventEmitter();
+	var onData = _.bind(emitter.emit, emitter, 'data');
+	var onError = _.bind(emitter.emit, emitter, 'error');
+	var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
 
-	_.defer(function() {
+	gettingDataEmitter
+		.on('data', function(data) {
 
-		var onData = _.bind(emitter.emit, emitter, 'data');
-		var onError = _.bind(emitter.emit, emitter, 'error');
-		var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
-		var sourceOptions = this.prepareSourceOptions(name, options);
-		var filterOptions = this.prepareFilterOptions(options.filter);
-		var filterData = this.filterData.bind(this);
+			data || (data = []);
+			data = filterData(data, filterOptions);
 
-		source.getData(sourceOptions)
-			.on('data', function(data) {
+			// Add the 'source' attribute to every item.
+			data = _.map(data, function(item) {
+				item.source = name;
+				return item;
+			});
 
-				data || (data = []);
-				data = filterData(data, filterOptions);
+			onData(data);
 
-				// Add the 'source' attribute to every item.
-				data = _.map(data, function(item) {
-					item.source = name;
-					return item;
-				});
-
-				onData(data);
-			})
-			.on('error', onError)
-			.once('end', onEnd);
-
-	}.bind(this));
+		})
+		.on('error', onError)
+		.once('end', onEnd);
 
 	return emitter;
 };

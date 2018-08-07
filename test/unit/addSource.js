@@ -72,7 +72,7 @@ describe('addSource(name, source)', function() {
 				thrownError = error;
 			}
 			expect(thrownError).to.not.be.undefined;
-			expect(thrownError.message).to.equal('Source missing required "getData" method.');
+			expect(thrownError.message).to.equal('Source missing required method: "getData"');
 		});
 	});
 

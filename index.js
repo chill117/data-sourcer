@@ -13,96 +13,98 @@ var debug = {
 
 var DataSourcer = module.exports = function(options) {
 
-	this.options = this.prepareOptions(options, {
-
-		/*
-			Directory from which sources will be loaded.
-		*/
-		sourcesDir: null,
-
-		/*
-			The method name used to get data from a source. Required for each source.
-		*/
-		getDataMethodName: 'getData',
-
-		filter: {
-			/*
-				The filter mode determines how some options will be used to exclude data.
-
-				For example when using the following filter option: `someField: ['1', '2']`:
-					'strict' mode will only allow data that has the 'someField' property equal to '1' or '2'; ie. data that is missing the 'someField' property will be excluded.
-					'loose' mode will allow data that has the 'someField' property of '1' or '2' as well as those that are missing the 'someField' property.
-			*/
-			mode: 'strict',
-
-			/*
-				Include items by their property values. Examples:
-
-				`something: ['1', '2']`:
-					Each item's 'something' property must equal '1' or '2'.
-			*/
-			include: {
-			},
-
-			/*
-				Exclude items by their property values. Examples:
-
-				`something: ['3']`:
-					All items where 'something' equals '3' will be excluded.
-			*/
-			exclude: {
-			}
-		},
-
-		/*
-			Include data sources by name.
-
-			Only 'somewhere':
-			['somewhere']
-		*/
-		sourcesWhiteList: null,
-
-		/*
-			Exclude data sources by name.
-
-			All data sources except 'somewhere-else':
-			['somewhere-else']
-		*/
-		sourcesBlackList: null,
-
-		/*
-			Set to TRUE to have all asynchronous operations run in series.
-		*/
-		series: false,
-
-		/*
-			Use a queue to limit the number of simultaneous HTTP requests.
-		*/
-		requestQueue: {
-			/*
-				The maximum number of simultaneous requests. Set to 0 for unlimited.
-			*/
-			concurrency: 0,
-			/*
-				The time (in milliseconds) between each request. Set to 0 for no delay.
-			*/
-			delay: 0,
-		},
-
-		/*
-			Default request module options. For example you could pass the 'proxy' option in this way.
-
-			See for more info:
-			https://github.com/request/request#requestdefaultsoptions
-		*/
-		defaultRequestOptions: null,
-	});
+	this.options = this.prepareOptions(options, this.defaultOptions);
 
 	this.sources = {};
 
 	if (this.options.sourcesDir) {
 		this.loadSourcesFromDir(this.options.sourcesDir);
 	}
+};
+
+DataSourcer.prototype.defaultOptions = {
+
+	/*
+		Directory from which sources will be loaded.
+	*/
+	sourcesDir: null,
+
+	/*
+		The method name used to get data from a source. Required for each source.
+	*/
+	getDataMethodName: 'getData',
+
+	filter: {
+		/*
+			The filter mode determines how some options will be used to exclude data.
+
+			For example when using the following filter option: `someField: ['1', '2']`:
+				'strict' mode will only allow data that has the 'someField' property equal to '1' or '2'; ie. data that is missing the 'someField' property will be excluded.
+				'loose' mode will allow data that has the 'someField' property of '1' or '2' as well as those that are missing the 'someField' property.
+		*/
+		mode: 'strict',
+
+		/*
+			Include items by their property values. Examples:
+
+			`something: ['1', '2']`:
+				Each item's 'something' property must equal '1' or '2'.
+		*/
+		include: {
+		},
+
+		/*
+			Exclude items by their property values. Examples:
+
+			`something: ['3']`:
+				All items where 'something' equals '3' will be excluded.
+		*/
+		exclude: {
+		}
+	},
+
+	/*
+		Include data sources by name.
+
+		Only 'somewhere':
+		['somewhere']
+	*/
+	sourcesWhiteList: null,
+
+	/*
+		Exclude data sources by name.
+
+		All data sources except 'somewhere-else':
+		['somewhere-else']
+	*/
+	sourcesBlackList: null,
+
+	/*
+		Set to TRUE to have all asynchronous operations run in series.
+	*/
+	series: false,
+
+	/*
+		Use a queue to limit the number of simultaneous HTTP requests.
+	*/
+	requestQueue: {
+		/*
+			The maximum number of simultaneous requests. Must be greater than 0.
+		*/
+		concurrency: 10,
+		/*
+			The time (in milliseconds) between each request. Set to 0 for no delay.
+		*/
+		delay: 0,
+	},
+
+	/*
+		Default request module options. For example you could pass the 'proxy' option in this way.
+
+		See for more info:
+		https://github.com/request/request#requestdefaultsoptions
+	*/
+	defaultRequestOptions: null,
 };
 
 DataSourcer.prototype.addSource = function(name, source) {
@@ -282,10 +284,6 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	return emitter;
 };
 
-DataSourcer.prototype.isValidSourceName = function(name) {
-	return _.isString(name) && name.length > 0;
-};
-
 DataSourcer.prototype.listSources = function(options) {
 
 	options || (options = {});
@@ -314,6 +312,7 @@ DataSourcer.prototype.listSources = function(options) {
 };
 
 DataSourcer.prototype.loadSourcesFromDir = function(dirPath) {
+
 	var files = fs.readdirSync(dirPath);
 	_.each(files, function(file) {
 		var filePath = path.join(dirPath, file);
@@ -322,6 +321,7 @@ DataSourcer.prototype.loadSourcesFromDir = function(dirPath) {
 };
 
 DataSourcer.prototype.loadSourceFromFile = function(filePath) {
+
 	try {
 		var name = path.basename(filePath, '.js');
 		var source = require(filePath);
@@ -330,46 +330,43 @@ DataSourcer.prototype.loadSourceFromFile = function(filePath) {
 		debug.error(error);
 		return false;
 	}
+
 	return true;
 };
 
 DataSourcer.prototype.prepareFilterOptions = function(options) {
+
 	var filterOptions = _.defaults(options || {}, {
 		mode: 'strict'
 	});
+
 	var arrayToObjectHash = this.arrayToObjectHash.bind(this);
+
 	_.each(['include', 'exclude'], function(type) {
 		filterOptions[type] = _.mapObject(filterOptions[type], function(values) {
 			return arrayToObjectHash(values);
 		});
 	});
+
 	return filterOptions;
 };
 
 DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
+
 	defaultOptions = (defaultOptions || {});
 	options = _.defaults(options || {}, defaultOptions);
+
 	if (!_.isUndefined(defaultOptions.filter)) {
 		options.filter = _.defaults(options.filter || {}, defaultOptions.filter || {});
 		options.filter.include = _.defaults(options.filter.include || {}, defaultOptions.filter.include || {});
 		options.filter.exclude = _.defaults(options.filter.exclude || {}, defaultOptions.filter.exclude || {});
 	}
+
 	if (!_.isUndefined(defaultOptions.requestQueue)) {
 		options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
 	}
-	return options;
-};
 
-DataSourcer.prototype.prepareRequestQueue = function(options) {
-	options = _.defaults(options || {}, {
-		concurrency: 0,
-		delay: 0
-	});
-	return async.queue(function(task, next) {
-		task.fn.apply(task.fn, task.arguments).on('response', function() {
-			_.delay(next, options.delay);
-		});
-	}, options.concurrency);
+	return options;
 };
 
 DataSourcer.prototype.prepareSourceOptions = function(name, options) {
@@ -390,21 +387,41 @@ DataSourcer.prototype.prepareSourceOptions = function(name, options) {
 	// Only include the sourceOptions for this source.
 	sourceOptions.sourceOptions = _.pick(sourceOptions.sourceOptions || {}, name);
 
-	// Prepare request instance for the source.
-	var requestInstance = request.defaults(options.defaultRequestOptions || {});
-
-	if (options.requestQueue && options.requestQueue.concurrency) {
-		var requestQueue = this.prepareRequestQueue(options.requestQueue);
-		sourceOptions.request = function() {
-			requestQueue.push({ fn: requestInstance, arguments: arguments });
-		};
-	} else {
-		sourceOptions.request = requestInstance;
-	}
+	// Prepare request method.
+	sourceOptions.request = this.prepareRequestMethod(options);
 
 	return sourceOptions;
 };
 
+DataSourcer.prototype.prepareRequestMethod = function(options) {
+
+	options = options || {};
+	var defaultRequestOptions = _.defaults(options.defaultRequestOptions || {}, this.defaultOptions.defaultRequestOptions);
+	var fn = request.defaults(defaultRequestOptions);
+	var requestQueue = this.prepareRequestQueue(options.requestQueue);
+
+	return function() {
+		requestQueue.push({ fn: fn, arguments: arguments });
+	};
+};
+
+DataSourcer.prototype.prepareRequestQueue = function(options) {
+
+	options = _.defaults(options || {}, this.defaultOptions.requestQueue);
+
+	return async.queue(function(task, next) {
+		task.fn.apply(undefined, task.arguments).on('response', function() {
+			_.delay(next, options.delay);
+		});
+	}, options.concurrency);
+};
+
+DataSourcer.prototype.isValidSourceName = function(name) {
+
+	return _.isString(name) && name.length > 0;
+};
+
 DataSourcer.prototype.sourceExists = function(name) {
+
 	return _.has(this.sources, name);
 };

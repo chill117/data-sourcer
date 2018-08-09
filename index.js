@@ -16,8 +16,8 @@ var DataSourcer = module.exports = function(options) {
 
 	this.options = this.prepareOptions(options, this.defaultOptions);
 	this.sources = {};
-	this.prepareInternalQueues();
 	this.preparingBrowser = false;
+	this.prepareInternalQueues();
 
 	if (this.options.sourcesDir) {
 		this.loadSourcesFromDir(this.options.sourcesDir);
@@ -36,14 +36,12 @@ DataSourcer.prototype.defaultOptions = {
 	},
 
 	/*
-		Directory from which sources will be loaded.
-	*/
-	sourcesDir: null,
+		Default request module options. For example you could pass the 'proxy' option in this way.
 
-	/*
-		The method name used to get data from a source. Required for each source.
+		See for more info:
+		https://github.com/request/request#requestdefaultsoptions
 	*/
-	getDataMethodName: 'getData',
+	defaultRequestOptions: null,
 
 	filter: {
 		/*
@@ -75,25 +73,9 @@ DataSourcer.prototype.defaultOptions = {
 	},
 
 	/*
-		Include data sources by name.
-
-		Only 'somewhere':
-		['somewhere']
+		The method name used to get data from a source. Required for each source.
 	*/
-	sourcesWhiteList: null,
-
-	/*
-		Exclude data sources by name.
-
-		All data sources except 'somewhere-else':
-		['somewhere-else']
-	*/
-	sourcesBlackList: null,
-
-	/*
-		Set to TRUE to have all asynchronous operations run in series.
-	*/
-	series: false,
+	getDataMethodName: 'getData',
 
 	/*
 		Use a queue to limit the number of simultaneous HTTP requests.
@@ -110,12 +92,30 @@ DataSourcer.prototype.defaultOptions = {
 	},
 
 	/*
-		Default request module options. For example you could pass the 'proxy' option in this way.
-
-		See for more info:
-		https://github.com/request/request#requestdefaultsoptions
+		Set to TRUE to have all asynchronous operations run in series.
 	*/
-	defaultRequestOptions: null,
+	series: false,
+
+	/*
+		Exclude data sources by name.
+
+		All data sources except 'somewhere-else':
+		['somewhere-else']
+	*/
+	sourcesBlackList: null,
+
+	/*
+		Directory from which sources will be loaded.
+	*/
+	sourcesDir: null,
+
+	/*
+		Include data sources by name.
+
+		Only 'somewhere':
+		['somewhere']
+	*/
+	sourcesWhiteList: null,
 };
 
 DataSourcer.prototype.addSource = function(name, source) {

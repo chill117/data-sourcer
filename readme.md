@@ -69,6 +69,24 @@ All available options:
 ```js
 var options = {
 
+
+	/*
+		Options to pass to puppeteer when creating a new browser instance.
+	*/
+	browser: {
+		headless: true,
+		slowMo: 0,
+		timeout: 10000,
+	},
+
+	/*
+		Default request module options. For example you could pass the 'proxy' option in this way.
+
+		See for more info:
+		https://github.com/request/request#requestdefaultsoptions
+	*/
+	defaultRequestOptions: null,
+
 	filter: {
 		/*
 			The filter mode determines how some options will be used to exclude data.
@@ -99,12 +117,28 @@ var options = {
 	},
 
 	/*
-		Include data sources by name.
-
-		Only 'somewhere':
-		['somewhere']
+		The method name used to get data from a source. Required for each source.
 	*/
-	sourcesWhiteList: null,
+	getDataMethodName: 'getData',
+
+	/*
+		Use a queue to limit the number of simultaneous HTTP requests.
+	*/
+	requestQueue: {
+		/*
+			The maximum number of simultaneous requests. Must be greater than 0.
+		*/
+		concurrency: 10,
+		/*
+			The time (in milliseconds) between each request. Set to 0 for no delay.
+		*/
+		delay: 0,
+	},
+
+	/*
+		Set to TRUE to have all asynchronous operations run in series.
+	*/
+	series: false,
 
 	/*
 		Exclude data sources by name.
@@ -115,31 +149,17 @@ var options = {
 	sourcesBlackList: null,
 
 	/*
-		Set to TRUE to have all asynchronous operations run in series.
+		Directory from which sources will be loaded.
 	*/
-	series: false,
+	sourcesDir: null,
 
 	/*
-		Use a queue to limit the number of simultaneous HTTP requests.
-	*/
-	requestQueue: {
-		/*
-			The maximum number of simultaneous requests. Set to 0 for unlimited.
-		*/
-		concurrency: 0,
-		/*
-			The time (in milliseconds) between each request. Set to 0 for no delay.
-		*/
-		delay: 0,
-	},
+		Include data sources by name.
 
-	/*
-		Default request module options. For example you could pass the 'proxy' option in this way.
-
-		See for more info:
-		https://github.com/request/request#requestdefaultsoptions
+		Only 'somewhere':
+		['somewhere']
 	*/
-	defaultRequestOptions: null,
+	sourcesWhiteList: null,
 };
 ```
 
@@ -166,11 +186,13 @@ Sample `sources`:
 [
 	{
 		name: 'somewhere',
-		homeUrl: 'http://somewhere.com'
+		homeUrl: 'http://somewhere.com',
+		requiredOptions: {}
 	},
 	{
 		name: 'somewhere-else',
-		homeUrl: 'http://www.somewhere-else.com'
+		homeUrl: 'http://www.somewhere-else.com',
+		requiredOptions: {}
 	}
 ]
 ```
@@ -178,13 +200,6 @@ Sample `sources`:
 All available options:
 ```js
 var options = {
-	/*
-		Include data sources by name.
-
-		Only 'somewhere':
-		['somewhere']
-	*/
-	sourcesWhiteList: null,
 
 	/*
 		Exclude data sources by name.
@@ -192,7 +207,15 @@ var options = {
 		All data sources except 'somewhere-else':
 		['somewhere-else']
 	*/
-	sourcesBlackList: null
+	sourcesBlackList: null,
+
+	/*
+		Include data sources by name.
+
+		Only 'somewhere':
+		['somewhere']
+	*/
+	sourcesWhiteList: null,
 };
 ```
 
@@ -272,7 +295,8 @@ module.exports = {
 
 Options that are passed to your sources:
 * __filter__ - `object` - Passed through from the options that you provide the `getData` function.
-* __request__ - `function` - Instance of the [request](https://github.com/request/request#super-simple-to-use) module with the default options you provided via `defaultRequestOptions`. Requests made via the `options.request` instance are queued if using the `requestQueue` option.
+* __newPage__ - `function` with signature `newPage(cb)` - Get a new puppeteer page instance. See the [puppeteer docs](https://pptr.dev/#?product=Puppeteer&version=v1.6.2&show=api-class-page) for more details. Use as follows:
+* __request__ - `function` - Wrapper function for the [request](https://github.com/request/request#super-simple-to-use) module with the default options you provided via `defaultRequestOptions`. Requests made via the `options.request` instance are queued if using the `requestQueue` option.
 * __series__ - `boolean` - Passed through from the options that you provide the `getData` function.
 * __sourceOptions__ `object` - These are custom source options which are passed through to your source by name. You can use the `requiredOptions` source attribute to define which options are required for your source to run properly. Some example of a required option would be an API key or secret for some third-party web API.
 

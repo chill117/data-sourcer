@@ -27,6 +27,11 @@ var DataSourcer = module.exports = function(options) {
 DataSourcer.prototype.defaultOptions = {
 
 	/*
+		Directory from which abstracts will be loaded.
+	*/
+	abstractsDir: null,
+
+	/*
 		Options to pass to puppeteer when creating a new browser instance.
 	*/
 	browser: {
@@ -132,6 +137,24 @@ DataSourcer.prototype.addSource = function(name, source) {
 		throw new Error('Expected "source" to be an object.');
 	}
 
+	if (source.abstract) {
+
+		if (!this.options.abstractsDir) {
+			throw new Error('Source uses an abstract but "abstractsDir" option is not set');
+		}
+
+		var abstractFilePath = path.join(this.options.abstractsDir, source.abstract);
+		var abstract = _.clone(require(abstractFilePath));
+
+		source = _.defaults(source, abstract);
+
+		_.each(source.config, function(value, key) {
+			if (_.isNull(value)) {
+				throw new Error('Source missing required config: "' + key + '"');
+			}
+		});
+	}
+
 	var getData = source[this.options.getDataMethodName];
 	if (!getData || !_.isFunction(getData)) {
 		throw new Error('Source missing required method: "' + this.options.getDataMethodName + '"');
@@ -141,6 +164,7 @@ DataSourcer.prototype.addSource = function(name, source) {
 };
 
 DataSourcer.prototype.arrayToObjectHash = function(array) {
+
 	return _.object(_.map(array, function(value) {
 		return [value, true];
 	}));
@@ -148,13 +172,13 @@ DataSourcer.prototype.arrayToObjectHash = function(array) {
 
 DataSourcer.prototype.filterData = function(data, options) {
 
-	options || (options = {});
+	options = options || {};
 
 	var strict = options.mode === 'strict';
 
 	return _.filter(data, function(item) {
 
-		if (!item || !_.isObject(item)) {
+		if (!item || !_.isObject(item) || _.isEmpty(item)) {
 			return false;
 		}
 
@@ -199,6 +223,16 @@ DataSourcer.prototype.filterData = function(data, options) {
 
 		return true;
 	});
+};
+
+DataSourcer.prototype.processData = function(data, fn) {
+
+	return _.chain(data).map(function(item) {
+		item = _.clone(item);
+		item = fn(item);
+		if (!item || !_.isObject(item) || _.isEmpty(item)) return null;
+		return item;
+	}).compact().value();
 };
 
 DataSourcer.prototype.getData = function(options) {
@@ -262,6 +296,7 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	var sourceOptions = this.prepareSourceOptions(name, options);
 	var filterOptions = this.prepareFilterOptions(options.filter);
 	var filterData = this.filterData.bind(this);
+	var processData = this.processData.bind(this);
 	var getData = source[this.options.getDataMethodName].bind(source);
 	var gettingDataEmitter = getData(sourceOptions);
 
@@ -273,21 +308,21 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	var onData = _.bind(emitter.emit, emitter, 'data');
 	var onError = _.bind(emitter.emit, emitter, 'error');
 	var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
+	var processFn = function(item) {
+		if (options.process) {
+			item = options.process(item) || {};
+		}
+		// Add the 'source' attribute to every item:
+		item.source = name;
+		return item;
+	};
 
 	gettingDataEmitter
 		.on('data', function(data) {
-
 			data || (data = []);
 			data = filterData(data, filterOptions);
-
-			// Add the 'source' attribute to every item.
-			data = _.map(data, function(item) {
-				item.source = name;
-				return item;
-			});
-
+			data = processData(data, processFn);
 			onData(data);
-
 		})
 		.on('error', onError)
 		.once('end', onEnd);
@@ -297,7 +332,7 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 
 DataSourcer.prototype.listSources = function(options) {
 
-	options || (options = {});
+	options = options || {};
 
 	var sourcesWhiteList = options.sourcesWhiteList && this.arrayToObjectHash(options.sourcesWhiteList);
 	var sourcesBlackList = options.sourcesBlackList && this.arrayToObjectHash(options.sourcesBlackList);
@@ -502,8 +537,9 @@ DataSourcer.prototype.prepareInternalQueues = function() {
 
 	var queues = this.queues = {
 		onBrowserReady: async.queue(function(task, next) {
-			task.fn(next);
-		}),
+			task.fn();
+			next();
+		}, 1),
 	};
 
 	// Pause all queues.

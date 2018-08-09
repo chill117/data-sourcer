@@ -74,11 +74,14 @@ describe('getData([options])', function() {
 	});
 
 	it('should bubble up "data" events', function(done) {
+
 		var sampleData = [
 			{ some: 'data' },
 			{ some: 'more-data', withOtherAttributes: 2 }
 		];
-		dataSourcer.addSource('somewhere', {
+		var name = 'somewhere';
+
+		dataSourcer.addSource(name, {
 			homeUrl: 'https://somewhere',
 			getData: function() {
 				var emitter = new EventEmitter;
@@ -88,12 +91,21 @@ describe('getData([options])', function() {
 				return emitter;
 			}
 		});
+
 		dataSourcer.getData().on('data', function(data) {
+
+			var expectedData = _.map(sampleData, function(item) {
+				item = _.clone(item);
+				item.source = name;
+				return item;
+			});
+
 			try {
-				expect(data).to.deep.equal(sampleData);
+				expect(data).to.deep.equal(expectedData);
 			} catch (error) {
 				return done(error);
 			}
+
 			done();
 		});
 	});

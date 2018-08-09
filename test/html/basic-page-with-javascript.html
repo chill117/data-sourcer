@@ -1,0 +1,34 @@
+<html>
+<head></head>
+<body>
+	<h1>Basic Page with JavaScript</h1>
+	<p>Must be run by a browser so that JavaScript is executed and manipulates the page content.</p>
+	<ul class="list"></ul>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			var listEl = document.querySelector('.list');
+			var items = [
+				{
+					ipAddress: '127.0.0.1',
+					port: 3000,
+				},
+				{
+					ipAddress: '127.0.0.2',
+					port: 3001,
+				},
+				{
+					ipAddress: '127.0.0.3',
+					port: 3002,
+				},
+			];
+			var index, item, itemEl;
+			for (index = 0; index < items.length; index++) {
+				item = items[index];
+				itemEl = document.createElement('li');
+				itemEl.textContent = item.ipAddress + ':' + item.port;
+				listEl.appendChild(itemEl);
+			}
+		});
+	</script>
+</body>
+</html>

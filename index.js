@@ -5,6 +5,7 @@ var async = require('async');
 var EventEmitter = require('events').EventEmitter || require('events');
 var fs = require('fs');
 var path = require('path');
+var puppeteer = require('puppeteer');
 var request = require('request');
 
 var debug = {
@@ -14,8 +15,9 @@ var debug = {
 var DataSourcer = module.exports = function(options) {
 
 	this.options = this.prepareOptions(options, this.defaultOptions);
-
 	this.sources = {};
+	this.prepareInternalQueues();
+	this.preparingBrowser = false;
 
 	if (this.options.sourcesDir) {
 		this.loadSourcesFromDir(this.options.sourcesDir);
@@ -23,6 +25,15 @@ var DataSourcer = module.exports = function(options) {
 };
 
 DataSourcer.prototype.defaultOptions = {
+
+	/*
+		Options to pass to puppeteer when creating a new browser instance.
+	*/
+	browser: {
+		headless: true,
+		slowMo: 0,
+		timeout: 10000,
+	},
 
 	/*
 		Directory from which sources will be loaded.
@@ -356,6 +367,10 @@ DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
 	defaultOptions = (defaultOptions || {});
 	options = _.defaults(options || {}, defaultOptions);
 
+	if (!_.isUndefined(defaultOptions.browser)) {
+		options.browser = _.defaults(options.browser || {}, defaultOptions.browser);
+	}
+
 	if (!_.isUndefined(defaultOptions.filter)) {
 		options.filter = _.defaults(options.filter || {}, defaultOptions.filter || {});
 		options.filter.include = _.defaults(options.filter.include || {}, defaultOptions.filter.include || {});
@@ -363,7 +378,7 @@ DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
 	}
 
 	if (!_.isUndefined(defaultOptions.requestQueue)) {
-		options.requestQueue = _.defaults(options.requestQueue, defaultOptions.requestQueue);
+		options.requestQueue = _.defaults(options.requestQueue || {}, defaultOptions.requestQueue);
 	}
 
 	return options;
@@ -389,6 +404,9 @@ DataSourcer.prototype.prepareSourceOptions = function(name, options) {
 
 	// Prepare request method.
 	sourceOptions.request = this.prepareRequestMethod(options);
+
+	// Prepare wrapper for getting new puppeteer page instance.
+	sourceOptions.newPage = this.preparePage.bind(this);
 
 	return sourceOptions;
 };
@@ -424,4 +442,64 @@ DataSourcer.prototype.isValidSourceName = function(name) {
 DataSourcer.prototype.sourceExists = function(name) {
 
 	return _.has(this.sources, name);
+};
+
+DataSourcer.prototype.preparePage = function(done) {
+
+	this.onBrowserReady(function() {
+		this.browser.newPage().then(function(page) {
+			done(null, page);
+		}).catch(done);
+	}.bind(this));
+	this.prepareBrowser();
+};
+
+DataSourcer.prototype.prepareBrowser = function(done) {
+
+	done = done || _.noop;
+
+	if (this.browser || this.preparingBrowser) {
+		this.onBrowserReady(done);
+		return;
+	}
+
+	this.preparingBrowser = true;
+
+	var options = _.clone(this.options.browser);
+
+	/*
+		See:
+		https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#running-puppeteer-on-travis-ci
+	*/
+	if (process.env.TRAVIS_CI) {
+		options.args = [].concat(options.args || [], ['--no-sandbox']);
+	}
+
+	puppeteer.launch(options).then(function(browser) {
+		this.browser = browser;
+		this.queues.onBrowserReady.resume();
+		done();
+	}.bind(this)).catch(done);
+};
+
+DataSourcer.prototype.onBrowserReady = function(fn) {
+
+	if (this.browser) {
+		_.defer(fn);
+	} else {
+		this.queues.onBrowserReady.push({ fn: fn });
+	}
+};
+
+DataSourcer.prototype.prepareInternalQueues = function() {
+
+	var queues = this.queues = {
+		onBrowserReady: async.queue(function(task, next) {
+			task.fn(next);
+		}),
+	};
+
+	// Pause all queues.
+	// This prevents execution of queued items until queue.resume() is called.
+	_.invoke(queues, 'pause');
 };

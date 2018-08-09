@@ -24,7 +24,9 @@ describe('filterData(data, options)', function() {
 			{ someField: '2', other: 'field' },
 			{ anItem: 'missing-fields' },
 			{ someField: '4', anArrayField: ['text', 'field'] },
-			{ someField: '5', anArrayField: ['different'] }
+			{ someField: '5', anArrayField: ['different'] },
+			// Empty items should always be removed:
+			{},
 		];
 
 		var tests = [

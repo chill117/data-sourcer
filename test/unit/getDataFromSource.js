@@ -1,5 +1,6 @@
 'use strict';
 
+var _ = require('underscore');
 var EventEmitter = require('events').EventEmitter || require('events');
 var expect = require('chai').expect;
 
@@ -33,13 +34,53 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 	});
 
 	it('should call getData() method of the specified source', function(done) {
+
 		var name = 'somewhere';
+
 		dataSourcer.addSource(name, {
 			getData: function() {
 				done();
 			}
 		});
+
 		dataSourcer.getDataFromSource(name);
+	});
+
+	describe('options', function() {
+
+		it('process', function(done) {
+
+			var name = 'process';
+			var sampleData = [
+				{ something: '4' },
+				{ something: '5' },
+				{ something: '6' }
+			];
+
+			dataSourcer.addSource(name, {
+				getData: function() {
+					var emitter = new EventEmitter;
+					_.defer(function() {
+						emitter.emit('data', sampleData);
+					});
+					return emitter;
+				}
+			});
+
+			dataSourcer.getDataFromSource(name, {
+				process: function(item) {
+					item.added = 'some-attribute';
+					return item;
+				}
+			})
+				.on('data', function(processed) {
+					var processedDataCorrect = _.every(processed, function(item) {
+						return _.has(item, 'something') && _.has(item, 'added');
+					});
+					expect(processedDataCorrect).to.equal(true);
+					done();
+				});
+		});
 	});
 
 	describe('requiredOptions', function() {

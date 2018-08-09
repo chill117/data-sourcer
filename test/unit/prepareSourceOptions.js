@@ -1,5 +1,6 @@
 'use strict';
 
+var _ = require('underscore');
 var expect = require('chai').expect;
 
 var DataSourcer = require('../../index');
@@ -19,6 +20,15 @@ describe('prepareSourceOptions(name[, options])', function() {
 	it('should return an options object for a source', function() {
 
 		var name = 'somewhere';
+		var source = {
+			defaultOptions: {
+				something: '123',
+			},
+			getData: _.noop,
+		};
+
+		dataSourcer.addSource(name, source);
+
 		var options = {
 			sourcesWhiteList: [ 'somewhere' ],
 			sourcesBlackList: [ 'other' ],
@@ -33,7 +43,7 @@ describe('prepareSourceOptions(name[, options])', function() {
 			},
 			sourceOptions: {
 				somewhere: {
-					some: 'option'
+					another: 'option'
 				},
 				another: {
 					option: 1
@@ -47,6 +57,7 @@ describe('prepareSourceOptions(name[, options])', function() {
 		expect(sourceOptions.sourcesWhiteList).to.be.undefined;
 		expect(sourceOptions.sourcesBlackList).to.be.undefined;
 		expect(sourceOptions.requestQueue).to.be.undefined;
+		expect(sourceOptions.browser).to.be.undefined;
 
 		// Check for options that should be kept.
 		expect(sourceOptions.filter).to.deep.equal(options.filter);
@@ -60,8 +71,9 @@ describe('prepareSourceOptions(name[, options])', function() {
 		expect(sourceOptions.filter.include.someField).to.not.deep.equal(options.filter.include.someField);
 
 		// Check for name-spaced sourceOptions.
-		expect(sourceOptions.sourceOptions).to.not.be.undefined;
-		expect(sourceOptions.sourceOptions['somewhere']).to.not.be.undefined;
-		expect(sourceOptions.sourceOptions['another']).to.be.undefined;
+		expect(sourceOptions.sourceOptions).to.deep.equal(_.defaults(
+			options.sourceOptions.somewhere,
+			source.defaultOptions
+		));
 	});
 });

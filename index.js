@@ -302,23 +302,20 @@ DataSourcer.prototype.listSources = function(options) {
 	var sourcesWhiteList = options.sourcesWhiteList && this.arrayToObjectHash(options.sourcesWhiteList);
 	var sourcesBlackList = options.sourcesBlackList && this.arrayToObjectHash(options.sourcesBlackList);
 
-	// Get an array of source names filtered by the options.
-	var sourceNames = _.filter(_.keys(this.sources), function(name) {
+	var names = _.chain(this.sources).keys().filter(function(name) {
 		if (sourcesWhiteList) return sourcesWhiteList[name];
 		if (sourcesBlackList) return !sourcesBlackList[name];
 		return true;
-	});
+	}).value();
 
-	return _.map(sourceNames, function(name) {
-
+	return _.map(names, function(name) {
 		var source = this.sources[name];
-
-		return {
-			name: name,
-			homeUrl: source.homeUrl || '',
-			requiredOptions: source.requiredOptions || {}
-		};
-
+		return _.defaults(_.pick(source, 'defaultOptions', 'homeUrl', 'requiredOptions'), {
+			defaultOptions: {},
+			homeUrl: '',
+			name: name || '',
+			requiredOptions: {},
+		});
 	}, this);
 };
 
@@ -386,13 +383,20 @@ DataSourcer.prototype.prepareOptions = function(options, defaultOptions) {
 
 DataSourcer.prototype.prepareSourceOptions = function(name, options) {
 
-	options = (options || {});
+	if (!this.sourceExists(name)) {
+		throw new Error('Data source does not exist: "' + name + '"');
+	}
+
+	options = options || {};
+
+	var source = this.sources[name];
 
 	var sourceOptions = _.omit(options,
-		'sourcesWhiteList',
-		'sourcesBlackList',
+		'browser',
+		'defaultRequestOptions',
 		'requestQueue',
-		'defaultRequestOptions'
+		'sourcesBlackList',
+		'sourcesWhiteList'
 	);
 
 	// Deep clone the options object.
@@ -400,7 +404,10 @@ DataSourcer.prototype.prepareSourceOptions = function(name, options) {
 	sourceOptions = JSON.parse(JSON.stringify(sourceOptions || {}));
 
 	// Only include the sourceOptions for this source.
-	sourceOptions.sourceOptions = _.pick(sourceOptions.sourceOptions || {}, name);
+	sourceOptions.sourceOptions = _.defaults(
+		sourceOptions.sourceOptions && sourceOptions.sourceOptions[name] || {},
+		source.defaultOptions || {}
+	);
 
 	// Prepare request method.
 	sourceOptions.request = this.prepareRequestMethod(options);

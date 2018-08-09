@@ -26,9 +26,14 @@ describe('listSources([options])', function() {
 		expect(sources).to.be.an('array');
 		expect(sources).to.have.length(numTestSources);
 		_.each(sources, function(source) {
-			expect(_.has(source, 'name')).to.equal(true);
+			expect(source).to.have.property('defaultOptions');
+			expect(source.defaultOptions).to.be.an('object');
+			expect(source).to.have.property('homeUrl');
+			expect(source.homeUrl).to.be.a('string');
+			expect(source).to.have.property('name');
 			expect(source.name).to.be.a('string');
-			expect(_.has(source, 'homeUrl')).to.equal(true);
+			expect(source).to.have.property('requiredOptions');
+			expect(source.requiredOptions).to.be.an('object');
 		});
 	});
 

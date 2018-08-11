@@ -29,7 +29,7 @@ DataSourcer.prototype.defaultOptions = {
 	/*
 		Directory from which abstracts will be loaded.
 	*/
-	abstractsDir: null,
+	abstractsDir: path.join(__dirname, 'abstracts'),
 
 	/*
 		Options to pass to puppeteer when creating a new browser instance.
@@ -138,21 +138,8 @@ DataSourcer.prototype.addSource = function(name, source) {
 	}
 
 	if (source.abstract) {
-
-		if (!this.options.abstractsDir) {
-			throw new Error('Source uses an abstract but "abstractsDir" option is not set');
-		}
-
-		var abstractFilePath = path.join(this.options.abstractsDir, source.abstract);
-		var abstract = _.clone(require(abstractFilePath));
-
+		var abstract = this.loadAbstract(source.abstract);
 		source = _.defaults(source, abstract);
-
-		_.each(source.config, function(value, key) {
-			if (_.isNull(value)) {
-				throw new Error('Source missing required config: "' + key + '"');
-			}
-		});
 	}
 
 	var getData = source[this.options.getDataMethodName];
@@ -161,6 +148,19 @@ DataSourcer.prototype.addSource = function(name, source) {
 	}
 
 	this.sources[name] = source;
+};
+
+DataSourcer.prototype.loadAbstract = function(name) {
+
+	if (!this.options.abstractsDir) {
+		throw new Error('Cannot load abstract because the "abstractsDir" option is not set');
+	}
+
+	var abstractFilePath = path.join(this.options.abstractsDir, name);
+	var abstract = _.clone(require(abstractFilePath));
+	abstract[this.options.getDataMethodName] = abstract.getData;
+	abstract = _.omit(abstract, 'getData');
+	return abstract;
 };
 
 DataSourcer.prototype.arrayToObjectHash = function(array) {

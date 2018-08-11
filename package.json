@@ -1,6 +1,6 @@
 {
   "name": "data-sourcer",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Get (and filter) data from multiple different data sources quickly and efficiently.",
   "main": "index.js",
   "scripts": {

@@ -119,4 +119,22 @@ describe('filterData(data, options)', function() {
 			});
 		});
 	});
+
+	it('mutation', function() {
+
+		var options = {
+			filter: {
+				mode: 'strict',
+				include: {
+					some: ['1', '2'],
+				},
+				exclude: {
+					some: ['1', '2'],
+				},
+			},
+		};
+		var originalOptions = JSON.parse(JSON.stringify(options));
+		dataSourcer.prepareFilterOptions(options);
+		expect(options).to.deep.equal(originalOptions);
+	});
 });

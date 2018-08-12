@@ -320,9 +320,11 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	gettingDataEmitter
 		.on('data', function(data) {
 			data || (data = []);
-			data = filterData(data, filterOptions);
 			data = processData(data, processFn);
-			onData(data);
+			data = filterData(data, filterOptions);
+			if (data.length > 0) {
+				onData(data);
+			}
 		})
 		.on('error', onError)
 		.once('end', onEnd);
@@ -378,6 +380,8 @@ DataSourcer.prototype.loadSourceFromFile = function(filePath) {
 };
 
 DataSourcer.prototype.prepareFilterOptions = function(options) {
+
+	options = JSON.parse(JSON.stringify(options || {}));
 
 	var filterOptions = _.defaults(options || {}, {
 		mode: 'strict'

@@ -97,6 +97,11 @@ DataSourcer.prototype.defaultOptions = {
 	},
 
 	/*
+		The maximum number of data items (while sampling) to emit via the 'data' event.
+	*/
+	sampleDataLimit: 10,
+
+	/*
 		Set to TRUE to have all asynchronous operations run in series.
 	*/
 	series: false,
@@ -336,6 +341,9 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 		data = processData(data, processFn);
 		data = filterData(data, filterOptions);
 		if (data.length > 0) {
+			if (options.sample && options.sampleDataLimit) {
+				data = data.slice(0, options.sampleDataLimit);
+			}
 			emitter.emit('data', data);
 		}
 	};

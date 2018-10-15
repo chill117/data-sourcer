@@ -245,21 +245,37 @@ DataSourcer.prototype.getData = function(options) {
 
 		var sources = this.listSources(options);
 		var asyncMethod = options.series === true ? 'eachSeries' : 'each';
-		var onData = _.bind(emitter.emit, emitter, 'data');
-		var onError = _.bind(emitter.emit, emitter, 'error');
-		var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
+		var onData = emitter.emit.bind(emitter, 'data');
+		var onError = emitter.emit.bind(emitter, 'error');
+		var onEnd = _.once(emitter.emit.bind(emitter, 'end'));
 		var getDataFromSource = this.getDataFromSource.bind(this);
 
 		async[asyncMethod](sources, function(source, next) {
 
-			try {
-				getDataFromSource(source.name, options)
-					.on('data', onData)
-					.on('error', onError)
-					.on('end', next.bind(undefined, null));
-			} catch (error) {
+			var sourceEmitter;
+
+			var onSourceError = function(error) {
+				// Add the source's name to the error messages.
+				error.message = '[' + source.name + '] ' + error.message;
 				onError(error);
+			};
+
+			var onSourceEnd = function() {
+				if (sourceEmitter) {
+					sourceEmitter.removeAllListeners();
+					sourceEmitter = null;
+				}
 				next();
+			};
+
+			try {
+				sourceEmitter = getDataFromSource(source.name, options)
+					.on('data', onData)
+					.on('error', onSourceError)
+					.once('end', onSourceEnd);
+			} catch (error) {
+				onSourceError(error);
+				onSourceEnd();
 			}
 
 		}, onEnd);
@@ -294,9 +310,6 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	}
 
 	var sourceOptions = this.prepareSourceOptions(name, options);
-	var filterOptions = this.prepareFilterOptions(options.filter);
-	var filterData = this.filterData.bind(this);
-	var processData = this.processData.bind(this);
 	var getData = source[this.options.getDataMethodName].bind(source);
 	var gettingDataEmitter = getData(sourceOptions);
 
@@ -304,10 +317,11 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 		throw new Error('Expected source\'s ("' + name + '") ' + this.options.getDataMethodName + ' method to return an instance of the event emitter class.');
 	}
 
+	var filterOptions = this.prepareFilterOptions(options.filter);
+	var filterData = this.filterData.bind(this);
+	var processData = this.processData.bind(this);
 	var emitter = new EventEmitter();
-	var onData = _.bind(emitter.emit, emitter, 'data');
-	var onError = _.bind(emitter.emit, emitter, 'error');
-	var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
+
 	var processFn = function(item) {
 		if (options.process) {
 			item = options.process(item) || {};
@@ -317,15 +331,26 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 		return item;
 	};
 
+	var onData = function(data) {
+		data || (data = []);
+		data = processData(data, processFn);
+		data = filterData(data, filterOptions);
+		if (data.length > 0) {
+			emitter.emit('data', data);
+		}
+	};
+
+	var onError = emitter.emit.bind(emitter, 'error');
+	var onEnd = _.once(function() {
+		if (gettingDataEmitter) {
+			gettingDataEmitter.removeAllListeners();
+			gettingDataEmitter = null;
+		}
+		emitter.emit('end');
+	});
+
 	gettingDataEmitter
-		.on('data', function(data) {
-			data || (data = []);
-			data = processData(data, processFn);
-			data = filterData(data, filterOptions);
-			if (data.length > 0) {
-				onData(data);
-			}
-		})
+		.on('data', onData)
 		.on('error', onError)
 		.once('end', onEnd);
 

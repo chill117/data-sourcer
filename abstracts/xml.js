@@ -62,7 +62,8 @@ module.exports = {
 				feeds = feeds.slice(0, 1);
 			}
 
-			async.each(feeds, function(feed, next) {
+			var asyncMethod = options.series === true ? 'eachSeries' : 'each';
+			async[asyncMethod](feeds, function(feed, next) {
 				getDataFromFeed(feed, options, onData, function(error) {
 					// Emit the error, but don't stop the async.each() loop.
 					if (error) onError(error);
@@ -94,13 +95,13 @@ module.exports = {
 			},
 			function(xml, next) {
 				try {
-					var groups = getValueAtPath(xml, feed.paths.group);
+					var groups = getValueAtPath(xml, feed.paths.group) || [];
 					if (options.sample && groups.length > 0) {
 						// When sampling, only include the first few groups.
 						groups = groups.slice(0, 5);
 					}
 					_.each(groups, function(group) {
-						var items = getValueAtPath(group, feed.paths.item);
+						var items = getValueAtPath(group, feed.paths.item) || [];
 						if (options.sample && items.length > 0) {
 							// When sampling, only include the first few items.
 							items = items.slice(0, 10);

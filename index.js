@@ -163,8 +163,10 @@ DataSourcer.prototype.loadAbstract = function(name) {
 
 	var abstractFilePath = path.join(this.options.abstractsDir, name);
 	var abstract = _.clone(require(abstractFilePath));
-	abstract[this.options.getDataMethodName] = abstract.getData;
-	abstract = _.omit(abstract, 'getData');
+	if (this.options.getDataMethodName !== 'getData') {
+		abstract[this.options.getDataMethodName] = abstract.getData;
+		abstract = _.omit(abstract, 'getData');
+	}
 	return abstract;
 };
 

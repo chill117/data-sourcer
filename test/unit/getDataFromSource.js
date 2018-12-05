@@ -14,6 +14,10 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	afterEach(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.getDataFromSource).to.be.a('function');
 	});

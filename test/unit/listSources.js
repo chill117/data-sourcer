@@ -17,6 +17,10 @@ describe('listSources([options])', function() {
 		dataSourcer.addSource('other', { homeUrl: 'https://other', getData: function() {} });
 	});
 
+	after(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.listSources).to.be.a('function');
 	});

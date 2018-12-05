@@ -48,6 +48,10 @@ describe('loadSourcesFromDir(dirPath)', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	afterEach(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.loadSourcesFromDir).to.be.a('function');
 	});

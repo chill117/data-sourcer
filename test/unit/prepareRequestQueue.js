@@ -13,6 +13,10 @@ describe('prepareRequestQueue([options])', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	after(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.prepareRequestQueue).to.be.a('function');
 	});

@@ -155,6 +155,17 @@ DataSourcer.prototype.addSource = function(name, source) {
 	this.sources[name] = source;
 };
 
+DataSourcer.prototype.close = function(done) {
+
+	if (this.browser) {
+		this.browser.close().then(function() {
+			done();
+		}).catch(done);
+	} else {
+		_.defer(done);
+	}
+};
+
 DataSourcer.prototype.loadAbstract = function(name) {
 
 	if (!this.options.abstractsDir) {

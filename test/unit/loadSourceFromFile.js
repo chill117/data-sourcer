@@ -45,6 +45,10 @@ describe('loadSourceFromFile(filePath)', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	afterEach(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.loadSourceFromFile).to.be.a('function');
 	});

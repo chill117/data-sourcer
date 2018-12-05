@@ -15,6 +15,10 @@ describe('preparePage()', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	after(function(done) {
+		dataSourcer.close(done);
+	});
+
 	var host = 'localhost';
 	var port = 3000;
 	var baseUrl = 'http://' + host + ':' + port;

@@ -13,6 +13,10 @@ describe('isValidSourceName(name)', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	after(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.isValidSourceName).to.be.a('function');
 	});

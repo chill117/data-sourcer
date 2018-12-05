@@ -6,9 +6,15 @@ describe('options', function() {
 
 	describe('getDataMethodName', function() {
 
+		var dataSourcer;
+
+		afterEach(function(done) {
+			dataSourcer.close(done);
+		});
+
 		it('non-default usage', function(done) {
 			var getDataMethodName = 'getSomething';
-			var dataSourcer = new DataSourcer({
+			dataSourcer = new DataSourcer({
 				getDataMethodName: getDataMethodName,
 			});
 			var name = 'some-source';

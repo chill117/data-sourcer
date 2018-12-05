@@ -12,6 +12,10 @@ describe('arrayToObjectHash(array)', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	after(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.arrayToObjectHash).to.be.a('function');
 	});

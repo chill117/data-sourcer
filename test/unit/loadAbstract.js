@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('underscore');
 var async = require('async');
 var expect = require('chai').expect;
 var fs = require('fs');
@@ -45,6 +44,10 @@ describe('loadAbstract(name)', function() {
 		dataSourcer = new DataSourcer({
 			abstractsDir: abstractsDir,
 		});
+	});
+
+	afterEach(function(done) {
+		dataSourcer.close(done);
 	});
 
 	it('should be a function', function() {

@@ -13,6 +13,10 @@ describe('prepareSourceOptions(name[, options])', function() {
 		dataSourcer = new DataSourcer();
 	});
 
+	after(function(done) {
+		dataSourcer.close(done);
+	});
+
 	it('should be a function', function() {
 		expect(dataSourcer.prepareSourceOptions).to.be.a('function');
 	});

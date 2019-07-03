@@ -23,10 +23,10 @@
     "url": "https://github.com/chill117/data-sourcer/issues"
   },
   "dependencies": {
-    "async": "2.6.1",
+    "async": "3.1.0",
     "debug": "4.1.0",
     "feedparser": "2.2.9",
-    "puppeteer": "1.11.0",
+    "puppeteer": "1.18.1",
     "request": "2.88.0",
     "underscore": "1.9.1",
     "xml2js": "0.4.19"

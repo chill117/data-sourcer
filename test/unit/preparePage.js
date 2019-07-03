@@ -46,7 +46,7 @@ describe('preparePage()', function() {
 	});
 
 	it('can get and process html page in the context of a browser', function(done) {
-
+		this.timeout(5000);
 		dataSourcer.preparePage(function(error, page) {
 			expect(error).to.equal(null);
 			expect(page).to.be.an('object');

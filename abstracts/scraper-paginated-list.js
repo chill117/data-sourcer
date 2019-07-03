@@ -60,10 +60,15 @@ module.exports = {
 
 					var numScraped = 1;
 					var scrapedDataInLastPage = data.length > 0;
+					var doContinueScraping = function() {
+						return !!scrapedDataInLastPage && numScraped < numPagesToScrape;
+					};
 
-					async.until(function() {
-						return !scrapedDataInLastPage || numScraped >= numPagesToScrape;
-					}, function(next) {
+					if (!doContinueScraping()) {
+						return onEnd();
+					}
+
+					async.until(doContinueScraping, function(next) {
 						scrapeNextPage(function(error, data) {
 							if (error) return next(error);
 							scrapedDataInLastPage = data.length > 0;

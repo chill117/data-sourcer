@@ -1,6 +1,6 @@
 {
   "name": "data-sourcer",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Get (and filter) data from multiple different data sources quickly and efficiently.",
   "main": "index.js",
   "scripts": {
@@ -29,6 +29,7 @@
     "puppeteer": "1.18.1",
     "request": "2.88.0",
     "underscore": "1.9.1",
+    "user-agents": "1.0.308",
     "xml2js": "0.4.19"
   },
   "devDependencies": {

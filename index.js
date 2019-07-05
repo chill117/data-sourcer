@@ -7,6 +7,7 @@ var fs = require('fs');
 var path = require('path');
 var puppeteer = require('puppeteer');
 var request = require('request');
+var UserAgent = require('user-agents');
 
 var debug = {
 	error: require('debug')('data-sourcer:error'),
@@ -540,7 +541,10 @@ DataSourcer.prototype.preparePage = function(done) {
 
 	this.onBrowserReady(function() {
 		this.browser.newPage().then(function(page) {
-			done(null, page);
+			// Assign a random user agent.
+			page.setUserAgent((new UserAgent()).toString()).then(function() {
+				done(null, page);
+			}).catch(done);
 		}).catch(done);
 	}.bind(this));
 	this.prepareBrowser();

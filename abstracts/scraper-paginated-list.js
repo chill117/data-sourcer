@@ -36,9 +36,10 @@ module.exports = {
 				var onData = _.bind(emitter.emit, emitter, 'data');
 				var onError = _.bind(emitter.emit, emitter, 'error');
 				var onEnd = _.once(function() {
-					page && page.close().then(function() {
+					if (page && !page.isClosed()) {
+						page.close().catch(onError);
 						page = null;
-					}).catch(onError);
+					}
 					emitter.emit('end');
 				});
 
@@ -91,71 +92,66 @@ module.exports = {
 	},
 
 	goToStartPageAndScrapeData: function(page, done) {
-
 		async.seq(
 			this.goToStartPage.bind(this, page),
+			this.waitForElement.bind(this, page, this.config.selectors.item),
 			this.scrapeData.bind(this, page)
 		)(done);
 	},
 
 	goToNextPageAndScrapeData: function(page, done) {
-
-		this.nextPaginationLinkExists(page, function(error, exists) {
-			if (error) return done(error);
-			if (!exists) return done();
-			async.seq(
-				this.goToNextPage.bind(this, page),
-				this.scrapeData.bind(this, page)
-			)(done);
-		}.bind(this));
+		async.seq(
+			this.goToNextPage.bind(this, page),
+			this.waitForElement.bind(this, page, this.config.selectors.item),
+			this.scrapeData.bind(this, page)
+		)(done);
 	},
 
 	goToStartPage: function(page, done) {
+		this.navigate(page, this.config.startPageUrl, done);
+	},
 
+	goToNextPage: function(page, done) {
 		async.seq(
-			this.navigate.bind(this, page, this.config.startPageUrl),
-			this.waitForListElement.bind(this, page)
+			this.waitForElement.bind(this, page, this.config.selectors.nextLink),
+			this.extractLinkUrl.bind(this, page, this.config.selectors.nextLink),
+			this.navigate.bind(this, page)
 		)(done);
 	},
 
 	navigate: function(page, goToUrl, done) {
-
 		page.goto(goToUrl).then(function() {
 			done();
 		}).catch(done);
 	},
 
-	goToNextPage: function(page, done) {
-
-		async.seq(
-			this.clickNextPaginationLink.bind(this, page),
-			this.waitForListElement.bind(this, page)
-		)(done);
-	},
-
-	nextPaginationLinkExists: function(page, done) {
-
-		page.$(this.config.selectors.nextLink).then(function($el) {
-			done(null, !!$el);
+	extractLinkUrl: function(page, selector, done) {
+		page.evaluate(function(selector) {
+			return new Promise(function(resolve, reject) {
+				var linkUrl;
+				try {
+					var linkEl = document.querySelector(selector);
+					if (!linkEl) {
+						throw new Error('Could not find link element');
+					}
+					linkUrl = linkEl.href;
+				} catch (error) {
+					return reject(error.message);
+				}
+				resolve(linkUrl);
+			});
+		}, selector).then(function(linkUrl) {
+			done(null, linkUrl);
 		}).catch(done);
 	},
 
-	clickNextPaginationLink: function(page, done) {
-
-		page.click(this.config.selectors.nextLink).then(function() {
-			done();
-		}).catch(done);
-	},
-
-	waitForListElement: function(page, done) {
-
-		page.waitFor(this.config.selectors.item).then(function() {
+	waitForElement: function(page, selector, done) {
+		page.waitFor(selector).then(function() {
 			done();
 		}).catch(done);
 	},
 
 	scrapeData: function(page, done) {
-
 		var config = this.config;
 		done = _.once(done || _.noop);
 		page.evaluate(function(config) {

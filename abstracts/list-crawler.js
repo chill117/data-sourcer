@@ -58,9 +58,10 @@ module.exports = {
 				var onData = _.bind(emitter.emit, emitter, 'data');
 				var onError = _.bind(emitter.emit, emitter, 'error');
 				var onEnd = _.once(function() {
-					page && page.close().then(function() {
+					if (page && !page.isClosed()) {
+						page.close().catch(onError);
 						page = null;
-					}).catch(onError);
+					}
 					emitter.emit('end');
 				});
 

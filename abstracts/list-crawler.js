@@ -80,17 +80,17 @@ module.exports = {
 					listLinks = listLinks.slice(0, 1);
 				}
 
-				async.eachSeries(startUrls, function(startUrl, nextStartUrl) {
-					navigate(startUrl, function(error) {
-						if (error) return nextStartUrl(error);
-						async.eachSeries(listLinks, function(listLink, nextListLink) {
-							scrapeListPage(listLink, function(error, proxies) {
-								if (error) return nextListLink(error);
-								if (!_.isEmpty(proxies)) onData(proxies);
-								nextListLink();
+				async.eachSeries(listLinks, function(listLink, nextListLink) {
+					async.eachSeries(startUrls, function(startUrl, nextStartUrl) {
+						navigate(startUrl, function(error) {
+							if (error) return nextStartUrl(error);
+							scrapeListPage(listLink, function(error, data) {
+								if (error) return nextStartUrl(error);
+								if (!_.isEmpty(data)) onData(data);
+								nextStartUrl();
 							});
-						}, nextStartUrl);
-					});
+						});
+					}, nextListLink);
 				}, function(error) {
 					if (error) onError(error);
 					onEnd();

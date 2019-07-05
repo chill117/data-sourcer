@@ -20,9 +20,9 @@ describe('abstract.' + abstractName, function() {
 		});
 	});
 
-	var htmlDir;
+	var samplesDir;
 	beforeEach(function() {
-		htmlDir = path.join(__dirname, '..', '..', 'html', 'abstracts', abstractName);
+		samplesDir = path.join(__dirname, '..', '..', 'samples', 'abstracts', abstractName);
 	});
 
 	var host = 'localhost', port = 3000;
@@ -32,7 +32,7 @@ describe('abstract.' + abstractName, function() {
 		app = express();
 		app.server = app.listen(port, host);
 		app.get('*.html', function(req, res, next) {
-			var filePath = path.join(htmlDir, req.url);
+			var filePath = path.join(samplesDir, req.url);
 			fs.readFile(filePath, function(error, contents) {
 				if (error) {
 					return res.send(error.message).status(500).end();

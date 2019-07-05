@@ -26,7 +26,7 @@ describe('preparePage()', function() {
 	beforeEach(function() {
 		app = express();
 		app.server = app.listen(port, host);
-		var testHtmlFilePath = path.join(__dirname, '..', 'html', 'basic-page-with-javascript.html');
+		var testHtmlFilePath = path.join(__dirname, '..', 'samples', 'basic-page-with-javascript.html');
 		app.get('/test.html', function(req, res, next) {
 			fs.readFile(testHtmlFilePath, function(error, contents) {
 				if (error) return next(error);

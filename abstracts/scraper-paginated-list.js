@@ -36,7 +36,9 @@ module.exports = {
 				var onData = _.bind(emitter.emit, emitter, 'data');
 				var onError = _.bind(emitter.emit, emitter, 'error');
 				var onEnd = _.once(function() {
-					page && page.close();
+					page && page.close().then(function() {
+						page = null;
+					}).catch(onError);
 					emitter.emit('end');
 				});
 
@@ -155,37 +157,39 @@ module.exports = {
 	scrapeData: function(page, done) {
 
 		var config = this.config;
-
+		done = _.once(done || _.noop);
 		page.evaluate(function(config) {
-			var data = [];
-			try {
-				var itemEls = document.querySelectorAll(config.selectors.item);
-				if (itemEls) {
-					for (var index = 0; index < itemEls.length; index++) {
-						(function(itemEl) {
-							var item = {};
-							Object.keys(config.selectors.itemAttributes).forEach(function(key) {
-								var selector = config.selectors.itemAttributes[key];
-								var attrEl = itemEl.querySelector(selector);
-								if (!attrEl) return;
-								var value = attrEl.textContent;
-								if (value) {
-									item[key] = value;
-								}
-							});
-							if (Object.keys(item).length > 0) {
-								data.push(item);
-							}
-						})(itemEls[index]);
-					}
-				}
-			} catch (error) {
-				return Promise.reject(error);
-			}
-			return Promise.resolve(data);
-		}, config).then(function(data) {
-			data = _.chain(data).map(function(item) {
+			return new Promise(function(resolve, reject) {
 				try {
+					var data = [];
+					var itemEls = document.querySelectorAll(config.selectors.item);
+					if (itemEls) {
+						for (var index = 0; index < itemEls.length; index++) {
+							(function(itemEl) {
+								var item = {};
+								Object.keys(config.selectors.itemAttributes).forEach(function(key) {
+									var selector = config.selectors.itemAttributes[key];
+									var attrEl = itemEl.querySelector(selector);
+									if (!attrEl) return;
+									var value = attrEl.textContent;
+									if (value) {
+										item[key] = value;
+									}
+								});
+								if (Object.keys(item).length > 0) {
+									data.push(item);
+								}
+							})(itemEls[index]);
+						}
+					}
+				} catch (error) {
+					return reject(error);
+				}
+				return resolve(data);
+			});
+		}, config).then(function(data) {
+			try {
+				data = _.chain(data).map(function(item) {
 					item = _.mapObject(item, function(value, key) {
 						var parse = config.parseAttributes[key];
 						if (parse) {
@@ -201,11 +205,11 @@ module.exports = {
 						}
 						return value;
 					});
-				} catch (error) {
-					item = null;
-				}
-				return item;
-			}).compact().value();
+					return item;
+				}).compact().value();
+			} catch (error) {
+				return done(error);
+			}
 			done(null, data);
 		}).catch(done);
 	},

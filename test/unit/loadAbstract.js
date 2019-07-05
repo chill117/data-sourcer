@@ -51,7 +51,7 @@ describe('loadAbstract(name)', function() {
 	});
 
 	it('should be a function', function() {
-		expect(dataSourcer.addSource).to.be.a('function');
+		expect(dataSourcer.loadAbstract).to.be.a('function');
 	});
 
 	it('should load the abstract', function() {

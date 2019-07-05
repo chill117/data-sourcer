@@ -7,7 +7,8 @@
     "lint": "./node_modules/.bin/eslint --config .eslintrc.js *.js abstracts/*.js test/**/*.js",
     "prepublish": "npm run test",
     "pretest": "npm run lint",
-    "test": "./node_modules/.bin/mocha test/unit/ --recursive --reporter spec --ui bdd"
+    "test": "npm run test:unit",
+    "test:unit": "./node_modules/.bin/mocha test/unit/ --recursive --reporter spec --ui bdd"
   },
   "repository": {
     "type": "git",

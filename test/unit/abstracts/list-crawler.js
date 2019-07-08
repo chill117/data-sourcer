@@ -14,9 +14,9 @@ describe('abstract.' + abstractName, function() {
 	var dataSourcer;
 	beforeEach(function() {
 		dataSourcer = new DataSourcer({
-			browser: {
-				headless: false,
-			},
+			// browser: {
+			// 	headless: false,
+			// },
 		});
 	});
 

@@ -224,10 +224,6 @@ var options = {
 
 Each of your data sources should be a separate JavaScript file to be included via node's `require()` method. You are only required to define a `getData(options)` method, which should return an event emitter. See the following sample for more details:
 ```js
-// Core nodejs module.
-// See https://nodejs.org/api/events.html
-var EventEmitter = require('events').EventEmitter || require('events');
-
 module.exports = {
 	/*
 		The home URL for this source. Used as a reference only.
@@ -270,7 +266,7 @@ module.exports = {
 	*/
 	getData: function(options) {
 
-		var emitter = new EventEmitter();
+		var emitter = options.newEventEmitter();
 
 		// Defer emitting events until the emitter has been returned.
 		_.defer(function() {

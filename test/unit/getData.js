@@ -33,8 +33,8 @@ describe('getData([options])', function() {
 		_.each(sources, function(name) {
 			dataSourcer.addSource(name, {
 				homeUrl: 'https://' + name,
-				getData: function() {
-					var emitter = new EventEmitter;
+				getData: function(options) {
+					var emitter = options.newEventEmitter();
 					gotDataFromSource[name] = true;
 					_.defer(function() {
 						emitter.emit('end');
@@ -59,8 +59,8 @@ describe('getData([options])', function() {
 		var sampleError = new Error('Some error!');
 		dataSourcer.addSource('somewhere', {
 			homeUrl: 'https://somewhere',
-			getData: function() {
-				var emitter = new EventEmitter;
+			getData: function(options) {
+				var emitter = options.newEventEmitter();
 				_.defer(function() {
 					emitter.emit('error', sampleError);
 				});
@@ -87,8 +87,8 @@ describe('getData([options])', function() {
 
 		dataSourcer.addSource(name, {
 			homeUrl: 'https://somewhere',
-			getData: function() {
-				var emitter = new EventEmitter;
+			getData: function(options) {
+				var emitter = options.newEventEmitter();
 				_.defer(function() {
 					emitter.emit('data', sampleData);
 				});
@@ -139,8 +139,8 @@ describe('getData([options])', function() {
 				_.each(sources, function(name) {
 					dataSourcer.addSource(name, {
 						homeUrl: 'https://' + name,
-						getData: function() {
-							var emitter = new EventEmitter();
+						getData: function(options) {
+							var emitter = options.newEventEmitter();
 							_.defer(function() {
 								getDataCalledForSource(name);
 								emitter.emit('end');
@@ -175,8 +175,8 @@ describe('getData([options])', function() {
 
 			dataSourcer.addSource(name, {
 				requiredOptions: requiredOptions,
-				getData: function() {
-					var emitter = new EventEmitter();
+				getData: function(options) {
+					var emitter = options.newEventEmitter();
 					return emitter;
 				}
 			});

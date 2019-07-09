@@ -7,6 +7,7 @@ var fs = require('fs');
 var path = require('path');
 var puppeteer = require('puppeteer');
 var request = require('request');
+var SafeEventEmitter = require('./lib/SafeEventEmitter');
 var UserAgent = require('user-agents');
 
 var debug = {
@@ -256,7 +257,7 @@ DataSourcer.prototype.processData = function(data, fn) {
 
 DataSourcer.prototype.getData = function(options) {
 
-	var emitter = new EventEmitter();
+	var emitter = this.prepareSafeEventEmitter();
 
 	_.defer(function() {
 
@@ -323,7 +324,7 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 				!_.isObject(options.sourceOptions[name]) ||
 				_.isUndefined(options.sourceOptions[name][key])
 			) {
-				throw new Error('Missing required option (`option.sourceOptions.' + name + '.' + key + '`): ' + message);
+				throw new Error('Missing required option (`sourceOptions.' + name + '.' + key + '`): ' + message);
 			}
 		});
 	}
@@ -333,13 +334,13 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	var gettingDataEmitter = getData(sourceOptions);
 
 	if (!(gettingDataEmitter instanceof EventEmitter)) {
-		throw new Error('Expected source\'s ("' + name + '") ' + this.options.getDataMethodName + ' method to return an instance of the event emitter class.');
+		throw new Error('[' + name + '] Expected source\'s ' + this.options.getDataMethodName + ' method to return an instance of the event emitter class.');
 	}
 
 	var filterOptions = this.prepareFilterOptions(options.filter);
 	var filterData = this.filterData.bind(this);
 	var processData = this.processData.bind(this);
-	var emitter = new EventEmitter();
+	var emitter = this.prepareSafeEventEmitter();
 
 	var processFn = function(item) {
 		if (options.process) {
@@ -501,6 +502,9 @@ DataSourcer.prototype.prepareSourceOptions = function(name, options) {
 	// Prepare wrapper for getting new puppeteer page instance.
 	sourceOptions.newPage = this.preparePage.bind(this);
 
+	// Prepare wrapper for getting new SafeEventEmitter instance.
+	sourceOptions.newEventEmitter = this.prepareSafeEventEmitter.bind(this);
+
 	return sourceOptions;
 };
 
@@ -599,4 +603,13 @@ DataSourcer.prototype.prepareInternalQueues = function() {
 	// Pause all queues.
 	// This prevents execution of queued items until queue.resume() is called.
 	_.invoke(queues, 'pause');
+};
+
+DataSourcer.prototype.SafeEventEmitter = SafeEventEmitter;
+DataSourcer.prototype.prepareSafeEventEmitter = function() {
+	var safeEventEmitter = new SafeEventEmitter();
+	safeEventEmitter.on('error', function(error) {
+		debug.error(error);
+	});
+	return safeEventEmitter;
 };

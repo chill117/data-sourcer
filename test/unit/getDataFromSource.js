@@ -1,7 +1,6 @@
 'use strict';
 
 var _ = require('underscore');
-var EventEmitter = require('events').EventEmitter || require('events');
 var expect = require('chai').expect;
 
 var DataSourcer = require('../../index');
@@ -61,8 +60,8 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 		];
 
 		dataSourcer.addSource(name, {
-			getData: function() {
-				var emitter = new EventEmitter;
+			getData: function(options) {
+				var emitter = options.newEventEmitter();
 				_.defer(function() {
 					emitter.emit('data', sampleData);
 					emitter.emit('end');
@@ -106,8 +105,8 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 		];
 
 		dataSourcer.addSource(name, {
-			getData: function() {
-				var emitter = new EventEmitter;
+			getData: function(options) {
+				var emitter = options.newEventEmitter();
 				_.defer(function() {
 					emitter.emit('data', sampleData);
 					emitter.emit('end');
@@ -147,8 +146,8 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 			];
 
 			dataSourcer.addSource(name, {
-				getData: function() {
-					var emitter = new EventEmitter;
+				getData: function(options) {
+					var emitter = options.newEventEmitter();
 					_.defer(function() {
 						emitter.emit('data', sampleData);
 					});
@@ -183,8 +182,8 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 
 			dataSourcer.addSource(name, {
 				requiredOptions: requiredOptions,
-				getData: function() {
-					var emitter = new EventEmitter();
+				getData: function(options) {
+					var emitter = options.newEventEmitter();
 					return emitter;
 				}
 			});
@@ -198,7 +197,7 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 			}
 
 			expect(thrownError).to.not.be.undefined;
-			expect(thrownError.message).to.equal('Missing required option (`option.sourceOptions.' + name + '.something`): ' + requiredOptions.something);
+			expect(thrownError.message).to.equal('Missing required option (`sourceOptions.' + name + '.something`): ' + requiredOptions.something);
 		});
 	});
 });

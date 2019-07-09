@@ -2,13 +2,13 @@
 
 var _ = require('underscore');
 var async = require('async');
-var EventEmitter = require('events').EventEmitter || require('events');
 
 module.exports = {
 
 	homeUrl: null,
 	defaultOptions: {
 		numPagesToScrape: 10,
+		defaultTimeout: 2000,
 	},
 	config: {
 		startPageUrl: null,
@@ -26,7 +26,7 @@ module.exports = {
 
 	getData: function(options) {
 
-		var emitter = new EventEmitter();
+		var emitter = options.newEventEmitter();
 
 		_.defer(function() {
 
@@ -35,22 +35,25 @@ module.exports = {
 
 				var onData = _.bind(emitter.emit, emitter, 'data');
 				var onError = _.bind(emitter.emit, emitter, 'error');
-				var onEnd = _.once(function() {
-					if (page && !page.isClosed()) {
-						page.close().catch(onError);
-						page = null;
-					}
-					emitter.emit('end');
-				});
+				var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
 
 				if (error) {
 					onError(error);
 					return onEnd();
 				}
 
+				try {
+					page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
+				} catch (error) {
+					onError(error);
+				}
+
 				var scrapeFirstPage = this.goToStartPageAndScrapeData.bind(this, page);
 				var scrapeNextPage = this.goToNextPageAndScrapeData.bind(this, page);
-				var numPagesToScrape = options.sample ? 1 : options.sourceOptions.numPagesToScrape;
+				var numPagesToScrape = options.sourceOptions.numPagesToScrape;
+				if (options.sample) {
+					numPagesToScrape = Math.min(numPagesToScrape, 2);
+				}
 
 				scrapeFirstPage(function(error, data) {
 
@@ -71,7 +74,9 @@ module.exports = {
 						return onEnd();
 					}
 
-					async.until(doContinueScraping, function(next) {
+					async.whilst(function(next) {
+						next(null, doContinueScraping());
+					}, function(next) {
 						scrapeNextPage(function(error, data) {
 							if (error) return next(error);
 							scrapedDataInLastPage = data.length > 0;

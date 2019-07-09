@@ -2,7 +2,6 @@
 
 var _ = require('underscore');
 var async = require('async');
-var EventEmitter = require('events').EventEmitter || require('events');
 var parseXml = require('xml2js').parseString;
 
 var getValueAtPath = function(objectOrArray, path) {
@@ -46,7 +45,7 @@ module.exports = {
 
 	getData: function(options) {
 
-		var emitter = new EventEmitter();
+		var emitter = options.newEventEmitter();
 
 		_.defer(function() {
 

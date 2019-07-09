@@ -2,11 +2,12 @@
 
 var _ = require('underscore');
 var async = require('async');
-var EventEmitter = require('events').EventEmitter || require('events');
 
 module.exports = {
 	homeUrl: null,
-	defaultOptions: {},
+	defaultOptions: {
+		defaultTimeout: 2000,
+	},
 	config: {
 		startUrls: [
 			// 'https://example.com/proxy-list-1.html',
@@ -48,7 +49,7 @@ module.exports = {
 
 	getData: function(options) {
 
-		var emitter = new EventEmitter();
+		var emitter = options.newEventEmitter();
 
 		_.defer(function() {
 
@@ -64,14 +65,20 @@ module.exports = {
 					return onEnd();
 				}
 
+				try {
+					page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
+				} catch (error) {
+					onError(error);
+				}
+
 				var navigate = this.navigate.bind(this, page);
 				var scrapeListPage = this.scrapeListPage.bind(this, page);
 				var startUrls = this.config.startUrls;
 				var listLinks = this.config.listLinks;
 
 				if (options.sample) {
-					startUrls = startUrls.slice(0, 1);
-					listLinks = listLinks.slice(0, 1);
+					startUrls = startUrls.slice(0, 2);
+					listLinks = listLinks.slice(0, 2);
 				}
 
 				async.eachSeries(listLinks, function(listLink, nextListLink) {

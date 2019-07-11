@@ -129,7 +129,7 @@ module.exports = {
 	goToNextPage: function(page, done) {
 		async.seq(
 			this.waitForElement.bind(this, page, this.config.selectors.nextLink),
-			this.clickElement.bind(this, page, this.config.selectors.nextLink),
+			this.clickElement.bind(this, page, this.config.selectors.nextLink)
 		)(done);
 	},
 

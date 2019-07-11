@@ -1,9 +1,6 @@
 'use strict';
 
-var async = require('async');
 var expect = require('chai').expect;
-var fs = require('fs');
-var path = require('path');
 
 var DataSourcer = require('../../index');
 var helpers = require('../helpers');

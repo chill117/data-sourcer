@@ -6,7 +6,11 @@ var async = require('async');
 module.exports = {
 	homeUrl: null,
 	defaultOptions: {
-		defaultTimeout: 2000,
+		defaultTimeout: 20000,
+		viewport: {
+			width: 1280,
+			height: 800,
+		},
 	},
 	config: {
 		startUrls: [
@@ -67,6 +71,7 @@ module.exports = {
 
 				try {
 					page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
+					page.setViewport(options.sourceOptions.viewport);
 				} catch (error) {
 					onError(error);
 				}
@@ -106,31 +111,10 @@ module.exports = {
 	scrapeListPage: function(page, linkSelector, done) {
 		async.seq(
 			this.waitForElement.bind(this, page, linkSelector),
-			this.extractLinkUrl.bind(this, page, linkSelector),
-			this.navigate.bind(this, page),
+			this.clickElement.bind(this, page, linkSelector),
 			this.waitForListOrItemsElements.bind(this, page),
 			this.scrapeListData.bind(this, page)
 		)(done);
-	},
-
-	extractLinkUrl: function(page, selector, done) {
-		page.evaluate(function(selector) {
-			return new Promise(function(resolve, reject) {
-				var linkUrl;
-				try {
-					var linkEl = document.querySelector(selector);
-					if (!linkEl) {
-						throw new Error('Could not find link element');
-					}
-					linkUrl = linkEl.href;
-				} catch (error) {
-					return reject(error.message);
-				}
-				resolve(linkUrl);
-			});
-		}, selector).then(function(linkUrl) {
-			done(null, linkUrl);
-		}).catch(done);
 	},
 
 	navigate: function(page, goToUrl, done) {
@@ -151,6 +135,12 @@ module.exports = {
 
 	waitForElement: function(page, selector, done) {
 		page.waitFor(selector).then(function() {
+			done();
+		}).catch(done);
+	},
+
+	clickElement: function(page, selector, done) {
+		page.click(selector).then(function() {
 			done();
 		}).catch(done);
 	},

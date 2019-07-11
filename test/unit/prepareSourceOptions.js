@@ -4,13 +4,31 @@ var _ = require('underscore');
 var expect = require('chai').expect;
 
 var DataSourcer = require('../../index');
+var helpers = require('../helpers');
 
 describe('prepareSourceOptions(name[, options])', function() {
 
 	var dataSourcer;
-
 	before(function() {
-		dataSourcer = new DataSourcer();
+		dataSourcer = new DataSourcer({
+			abstractsDir: helpers.directories.abstracts,
+		});
+	});
+
+	var abstractName = 'prepareSourceOptions';
+	var abstract = {
+		homeUrl: null,
+		defaultOptions: {
+			fromAbstract: '345',
+		},
+		getData: function() {},
+	};
+	before(function(done) {
+		helpers.createTestAbstract(abstractName, abstract, done);
+	});
+
+	after(function(done) {
+		helpers.destroyTestAbstract(abstractName, done);
 	});
 
 	after(function(done) {
@@ -25,8 +43,9 @@ describe('prepareSourceOptions(name[, options])', function() {
 
 		var name = 'somewhere';
 		var source = {
+			abstract: abstractName,
 			defaultOptions: {
-				something: '123',
+				fromSource: '123',
 			},
 			getData: _.noop,
 		};
@@ -75,9 +94,11 @@ describe('prepareSourceOptions(name[, options])', function() {
 		expect(sourceOptions.filter.include.someField).to.not.deep.equal(options.filter.include.someField);
 
 		// Check for name-spaced sourceOptions.
+		// And for defaultOptions.
 		expect(sourceOptions.sourceOptions).to.deep.equal(_.defaults(
 			options.sourceOptions.somewhere,
-			source.defaultOptions
+			source.defaultOptions,
+			abstract.defaultOptions
 		));
 	});
 });

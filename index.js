@@ -147,6 +147,14 @@ DataSourcer.prototype.addSource = function(name, source) {
 	if (source.abstract) {
 		var abstract = this.loadAbstract(source.abstract);
 		source = _.defaults(source, abstract);
+		if (abstract.defaultOptions) {
+			source.defaultOptions = _.defaults(source.defaultOptions || {}, abstract.defaultOptions);
+			_.each(abstract.defaultOptions, function(defaultOptions, key) {
+				if (_.isObject(defaultOptions)) {
+					source.defaultOptions[key] = _.defaults(source.defaultOptions[key], defaultOptions);
+				}
+			});
+		}
 	}
 
 	var getData = source[this.options.getDataMethodName];
@@ -491,10 +499,13 @@ DataSourcer.prototype.prepareSourceOptions = function(name, options) {
 	sourceOptions = JSON.parse(JSON.stringify(sourceOptions || {}));
 
 	// Only include the sourceOptions for this source.
-	sourceOptions.sourceOptions = _.defaults(
-		sourceOptions.sourceOptions && sourceOptions.sourceOptions[name] || {},
-		source.defaultOptions || {}
-	);
+	sourceOptions.sourceOptions = sourceOptions.sourceOptions && sourceOptions.sourceOptions[name] || {};
+	sourceOptions.sourceOptions = _.defaults(sourceOptions.sourceOptions, source.defaultOptions || {});
+	_.each(source.defaultOptions, function(defaultOptions, key) {
+		if (_.isObject(defaultOptions)) {
+			sourceOptions.sourceOptions[key] = _.defaults(sourceOptions.sourceOptions[key], defaultOptions);
+		}
+	});
 
 	// Prepare request method.
 	sourceOptions.request = this.prepareRequestMethod(options);

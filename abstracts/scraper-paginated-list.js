@@ -8,7 +8,12 @@ module.exports = {
 	homeUrl: null,
 	defaultOptions: {
 		numPagesToScrape: 10,
-		defaultTimeout: 2000,
+		defaultTimeout: 20000,
+		viewport: {
+			width: 1280,
+			height: 800,
+		},
+		nextPageDelay: 0,
 	},
 	config: {
 		startPageUrl: null,
@@ -44,12 +49,13 @@ module.exports = {
 
 				try {
 					page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
+					page.setViewport(options.sourceOptions.viewport);
 				} catch (error) {
 					onError(error);
 				}
 
 				var scrapeFirstPage = this.goToStartPageAndScrapeData.bind(this, page);
-				var scrapeNextPage = this.goToNextPageAndScrapeData.bind(this, page);
+				var scrapeNextPage = this.goToNextPageAndScrapeData.bind(this, page, options);
 				var numPagesToScrape = options.sourceOptions.numPagesToScrape;
 				if (options.sample) {
 					numPagesToScrape = Math.min(numPagesToScrape, 2);
@@ -104,9 +110,13 @@ module.exports = {
 		)(done);
 	},
 
-	goToNextPageAndScrapeData: function(page, done) {
+	goToNextPageAndScrapeData: function(page, options, done) {
+		done = _.once(done);
 		async.seq(
 			this.goToNextPage.bind(this, page),
+			function(next) {
+				_.delay(next, options.sourceOptions.nextPageDelay);
+			},
 			this.waitForElement.bind(this, page, this.config.selectors.item),
 			this.scrapeData.bind(this, page)
 		)(done);
@@ -119,39 +129,24 @@ module.exports = {
 	goToNextPage: function(page, done) {
 		async.seq(
 			this.waitForElement.bind(this, page, this.config.selectors.nextLink),
-			this.extractLinkUrl.bind(this, page, this.config.selectors.nextLink),
-			this.navigate.bind(this, page)
+			this.clickElement.bind(this, page, this.config.selectors.nextLink),
 		)(done);
-	},
-
-	navigate: function(page, goToUrl, done) {
-		page.goto(goToUrl).then(function() {
-			done();
-		}).catch(done);
-	},
-
-	extractLinkUrl: function(page, selector, done) {
-		page.evaluate(function(selector) {
-			return new Promise(function(resolve, reject) {
-				var linkUrl;
-				try {
-					var linkEl = document.querySelector(selector);
-					if (!linkEl) {
-						throw new Error('Could not find link element');
-					}
-					linkUrl = linkEl.href;
-				} catch (error) {
-					return reject(error.message);
-				}
-				resolve(linkUrl);
-			});
-		}, selector).then(function(linkUrl) {
-			done(null, linkUrl);
-		}).catch(done);
 	},
 
 	waitForElement: function(page, selector, done) {
 		page.waitFor(selector).then(function() {
+			done();
+		}).catch(done);
+	},
+
+	clickElement: function(page, selector, done) {
+		page.click(selector).then(function() {
+			done();
+		}).catch(done);
+	},
+
+	navigate: function(page, goToUrl, done) {
+		page.goto(goToUrl).then(function() {
 			done();
 		}).catch(done);
 	},
@@ -190,7 +185,7 @@ module.exports = {
 			});
 		}, config).then(function(data) {
 			try {
-				data = _.chain(data).map(function(item) {
+				data = _.map(data, function(item) {
 					item = _.mapObject(item, function(value, key) {
 						var parse = config.parseAttributes[key];
 						if (parse) {
@@ -207,7 +202,7 @@ module.exports = {
 						return value;
 					});
 					return item;
-				}).compact().value();
+				});
 			} catch (error) {
 				return done(error);
 			}

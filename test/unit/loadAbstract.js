@@ -6,44 +6,25 @@ var fs = require('fs');
 var path = require('path');
 
 var DataSourcer = require('../../index');
+var helpers = require('../helpers');
 
 describe('loadAbstract(name)', function() {
 
-	var abstractsDir = path.join(__dirname, '..', 'abstracts');
-	var abstractFilePath = path.join(abstractsDir, 'test-abstract.js');
-
-	before(function(done) {
-		fs.stat(abstractsDir, function(error) {
-			if (!error) return done();
-			fs.mkdir(abstractsDir, done);
-		});
-	});
-
-	before(function(done) {
-		var content = 'module.exports = { homeUrl: null, getData: function() {}, customMethod: function() {} };';
-		fs.writeFile(abstractFilePath, content, done);
-	});
-
-	after(function(done) {
-		fs.readdir(abstractsDir, function(error, files) {
-			if (error) return done(error);
-			async.each(files, function(file, next) {
-				var filePath = path.join(abstractsDir, file);
-				fs.unlink(filePath, next);
-			}, done);
-		});
-	});
-
-	after(function(done) {
-		fs.rmdir(abstractsDir, done);
-	});
-
 	var dataSourcer;
-
 	beforeEach(function() {
 		dataSourcer = new DataSourcer({
-			abstractsDir: abstractsDir,
+			abstractsDir: helpers.directories.abstracts,
 		});
+	});
+
+	var abstractName = 'loadAbstract';
+	before(function(done) {
+		var abstract = 'module.exports = { homeUrl: null, getData: function() {}, customMethod: function() {} };'
+		helpers.createTestAbstract(abstractName, abstract, done);
+	});
+
+	after(function(done) {
+		helpers.destroyTestAbstract(abstractName, done);
 	});
 
 	afterEach(function(done) {
@@ -55,10 +36,9 @@ describe('loadAbstract(name)', function() {
 	});
 
 	it('should load the abstract', function() {
-		var name = 'test-abstract';
 		var thrownError;
 		try {
-			var abstract = dataSourcer.loadAbstract(name);
+			var abstract = dataSourcer.loadAbstract(abstractName);
 		} catch (error) {
 			thrownError = error;
 		}

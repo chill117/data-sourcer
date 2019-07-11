@@ -3,6 +3,7 @@
 var _ = require('underscore');
 var async = require('async');
 var parseXml = require('xml2js').parseString;
+var UserAgent = require('user-agents');
 
 var getValueAtPath = function(objectOrArray, path) {
 	var value = objectOrArray;
@@ -75,10 +76,22 @@ module.exports = {
 		return emitter;
 	},
 
-	getDataFromFeed: function(feed, options, onData, done) {
+	prepareRequestOptions: function(feed) {
 
 		var requestOptions = _.result(feed, 'requestOptions');
+		requestOptions = _.defaults(requestOptions || {}, {
+			url: feed.url || null,
+			headers: {},
+		});
+		requestOptions.headers = _.defaults(requestOptions.headers, {
+			'User-Agent': (new UserAgent()).toString(),
+		});
+		return requestOptions;
+	},
 
+	getDataFromFeed: function(feed, options, onData, done) {
+
+		var requestOptions = this.prepareRequestOptions(feed);
 		async.seq(
 			function(next) {
 				options.request(requestOptions, function(error, response) {

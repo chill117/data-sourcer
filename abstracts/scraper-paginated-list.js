@@ -8,7 +8,8 @@ module.exports = {
 	homeUrl: null,
 	defaultOptions: {
 		numPagesToScrape: 10,
-		defaultTimeout: 20000,
+		defaultTimeout: 1000,
+		defaultNavigationTimeout: 30000,
 		viewport: {
 			width: 1280,
 			height: 800,
@@ -49,9 +50,11 @@ module.exports = {
 
 				try {
 					page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
+					page.setDefaultNavigationTimeout(options.sourceOptions.defaultNavigationTimeout);
 					page.setViewport(options.sourceOptions.viewport);
 				} catch (error) {
 					onError(error);
+					return onEnd();
 				}
 
 				var scrapeFirstPage = this.goToStartPageAndScrapeData.bind(this, page);
@@ -85,7 +88,7 @@ module.exports = {
 					}, function(next) {
 						scrapeNextPage(function(error, data) {
 							if (error) return next(error);
-							scrapedDataInLastPage = data.length > 0;
+							scrapedDataInLastPage = data && data.length > 0;
 							numScraped++;
 							onData(data);
 							next();
@@ -112,14 +115,18 @@ module.exports = {
 
 	goToNextPageAndScrapeData: function(page, options, done) {
 		done = _.once(done);
-		async.seq(
-			this.goToNextPage.bind(this, page),
-			function(next) {
-				_.delay(next, options.sourceOptions.nextPageDelay);
-			},
-			this.waitForElement.bind(this, page, this.config.selectors.item),
-			this.scrapeData.bind(this, page)
-		)(done);
+		page.$(this.config.selectors.nextLink).then(function(el) {
+			// Next link does not exist - stop here.
+			if (!el) return done();
+			async.seq(
+				this.goToNextPage.bind(this, page),
+				function(next) {
+					_.delay(next, options.sourceOptions.nextPageDelay);
+				},
+				this.waitForElement.bind(this, page, this.config.selectors.item),
+				this.scrapeData.bind(this, page)
+			)(done);
+		}.bind(this)).catch(done);
 	},
 
 	goToStartPage: function(page, done) {
@@ -146,9 +153,20 @@ module.exports = {
 	},
 
 	navigate: function(page, goToUrl, done) {
-		page.goto(goToUrl).then(function() {
+		done = _.once(done);
+		page.goto(goToUrl).catch(function(error) {
+			var match = error.message.match(/Navigation Timeout Exceeded: ([0-9]+[a-z]+) exceeded/i);
+			if (match) {
+				return done(new Error('Navigation Timeout Exceeded (' + goToUrl + '): ' + match[1] + ' exceeded'));
+			}
+			done(error);
+		});
+		page.once('response', function(response) {
+			if (response.status() >= 400) {
+				return done(new Error('HTTP ' + response.status() + ' (' + goToUrl + '): ' + response.statusText()));
+			}
 			done();
-		}).catch(done);
+		});
 	},
 
 	scrapeData: function(page, done) {
@@ -167,10 +185,7 @@ module.exports = {
 									var selector = config.selectors.itemAttributes[key];
 									var attrEl = itemEl.querySelector(selector);
 									if (!attrEl) return;
-									var value = attrEl.textContent;
-									if (value) {
-										item[key] = value;
-									}
+									item[key] = attrEl.textContent;
 								});
 								if (Object.keys(item).length > 0) {
 									data.push(item);

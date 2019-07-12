@@ -6,7 +6,8 @@ var async = require('async');
 module.exports = {
 	homeUrl: null,
 	defaultOptions: {
-		defaultTimeout: 20000,
+		defaultTimeout: 1000,
+		defaultNavigationTimeout: 30000,
 		viewport: {
 			width: 1280,
 			height: 800,
@@ -71,9 +72,11 @@ module.exports = {
 
 				try {
 					page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
+					page.setDefaultNavigationTimeout(options.sourceOptions.defaultNavigationTimeout);
 					page.setViewport(options.sourceOptions.viewport);
 				} catch (error) {
 					onError(error);
+					return onEnd();
 				}
 
 				var navigate = this.navigate.bind(this, page);
@@ -118,9 +121,20 @@ module.exports = {
 	},
 
 	navigate: function(page, goToUrl, done) {
-		page.goto(goToUrl).then(function() {
+		done = _.once(done);
+		page.goto(goToUrl).catch(function(error) {
+			var match = error.message.match(/Navigation Timeout Exceeded: ([0-9]+[a-z]+) exceeded/i);
+			if (match) {
+				return done(new Error('Navigation Timeout Exceeded (' + goToUrl + '): ' + match[1] + ' exceeded'));
+			}
+			done(error);
+		});
+		page.once('response', function(response) {
+			if (response.status() >= 400) {
+				return done(new Error('HTTP ' + response.status() + ' (' + goToUrl + '): ' + response.statusText()));
+			}
 			done();
-		}).catch(done);
+		});
 	},
 
 	waitForListOrItemsElements: function(page, done) {

@@ -153,6 +153,51 @@ describe('abstract.' + abstractName, function() {
 
 		describe('failure cases', function() {
 
+			it('thrown error in parseAttributes', function(done) {
+				var testThrownErrorMessage = 'This should be handled';
+				var source = {
+					name: 'scraper-paginated-list-thrown-error-parseAttributes',
+					definition: {
+						homeUrl: baseUrl,
+						abstract: 'scraper-paginated-list',
+						config: {
+							startPageUrl: baseUrl + '/page-0.html',
+							selectors: {
+								item: '#list table tbody tr',
+								itemAttributes: {
+									field1: 'td:nth-child(1)',
+								},
+								nextLink: '#pagination .next',
+							},
+							parseAttributes: {
+								field1: function() {
+									throw Error(testThrownErrorMessage);
+								},
+							},
+						},
+					},
+				};
+				dataSourcer.addSource(source.name, source.definition);
+				done = _.once(done);
+				var options = { sourceOptions: {} };
+				options.sourceOptions[source.name] = {
+					defaultTimeout: 50,
+				};
+				var errorMessage;
+				dataSourcer.getDataFromSource(source.name, options)
+					.on('error', function(error) {
+						errorMessage = error.message;
+					})
+					.once('end', function() {
+						try {
+							expect(errorMessage).to.equal(testThrownErrorMessage);
+						} catch (error) {
+							return done(error);
+						}
+						done();
+					});
+			});
+
 			it('item element does not exist', function(done) {
 				var source = {
 					name: 'scraper-paginated-list-list-element-does-not-exist',

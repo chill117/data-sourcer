@@ -4,7 +4,6 @@ var _ = require('underscore');
 var async = require('async');
 
 module.exports = {
-
 	homeUrl: null,
 	defaultOptions: {
 		numPagesToScrape: 10,
@@ -200,24 +199,26 @@ module.exports = {
 			});
 		}, config).then(function(data) {
 			try {
-				data = _.map(data, function(item) {
-					item = _.mapObject(item, function(value, key) {
-						var parse = config.parseAttributes[key];
-						if (parse) {
-							if (_.isString(parse)) {
-								var parseRegExp = new RegExp(parse);
-								if (parseRegExp) {
-									var match = value.match(parseRegExp);
-									value = match && match[1] || null;
+				if (config.parseAttributes) {
+					data = _.map(data, function(item) {
+						item = _.mapObject(item, function(value, key) {
+							var parse = config.parseAttributes[key];
+							if (parse) {
+								if (_.isString(parse)) {
+									var parseRegExp = new RegExp(parse);
+									if (parseRegExp) {
+										var match = value.match(parseRegExp);
+										value = match && match[1] || null;
+									}
+								} else if (_.isFunction(parse)) {
+									value = parse(value);
 								}
-							} else if (_.isFunction(parse)) {
-								value = parse(value);
 							}
-						}
-						return value;
+							return value;
+						});
+						return item;
 					});
-					return item;
-				});
+				}
 			} catch (error) {
 				return done(error);
 			}

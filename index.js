@@ -165,9 +165,21 @@ DataSourcer.prototype.addSource = function(name, source) {
 	this.sources[name] = source;
 };
 
-DataSourcer.prototype.close = function() {
+DataSourcer.prototype.close = function(done) {
 	if (this.browser) {
-		this.browser.close();
+		this.browser.close().then(function() {
+			if(done) {
+				done();
+			}
+		}).catch(function() {
+			if(done) {
+				done();
+			}
+		});
+	} else {
+		if(done) {
+			done();
+		}
 	}
 };
 

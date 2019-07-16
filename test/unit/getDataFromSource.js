@@ -49,6 +49,37 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 		dataSourcer.getDataFromSource(name);
 	});
 
+	it('handles thrown error inside data callback', function(done) {
+		var name = 'data-callback-thrown-error';
+		dataSourcer.addSource(name, {
+			getData: function(options) {
+				var emitter = options.newEventEmitter();
+				_.defer(function() {
+					emitter.emit('data', [{ something: '123' }]);
+					emitter.emit('end');
+				});
+				return emitter;
+			}
+		});
+		var testThrownErrorMessage = 'This should be handled';
+		var errorMessage;
+		dataSourcer.getDataFromSource(name)
+			.on('data', function() {
+				throw new Error(testThrownErrorMessage);
+			})
+			.on('error', function(error) {
+				errorMessage = error.message;
+			})
+			.once('end', function() {
+				try {
+					expect(errorMessage).to.equal(testThrownErrorMessage);
+				} catch (error) {
+					return done(error);
+				}
+				done();
+			});
+	});
+
 	it('process before filter', function(done) {
 
 		var name = 'process-then-filter';
@@ -136,38 +167,73 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 
 	describe('options', function() {
 
-		it('process', function(done) {
+		describe('process(fn)', function() {
 
-			var name = 'process';
-			var sampleData = [
-				{ something: '4' },
-				{ something: '5' },
-				{ something: '6' }
-			];
-
-			dataSourcer.addSource(name, {
-				getData: function(options) {
-					var emitter = options.newEventEmitter();
-					_.defer(function() {
-						emitter.emit('data', sampleData);
+			it('handles thrown error', function(done) {
+				var name = 'process-thrown-error';
+				dataSourcer.addSource(name, {
+					getData: function(options) {
+						var emitter = options.newEventEmitter();
+						_.defer(function() {
+							emitter.emit('data', [{ something: '123' }]);
+							emitter.emit('end');
+						});
+						return emitter;
+					}
+				});
+				var testThrownErrorMessage = 'This should be handled';
+				var errorMessage;
+				dataSourcer.getDataFromSource(name, {
+					process: function() {
+						throw new Error(testThrownErrorMessage);
+					}
+				})
+					.on('error', function(error) {
+						errorMessage = error.message;
+					})
+					.once('end', function() {
+						try {
+							expect(errorMessage).to.equal(testThrownErrorMessage);
+						} catch (error) {
+							return done(error);
+						}
+						done();
 					});
-					return emitter;
-				}
 			});
 
-			dataSourcer.getDataFromSource(name, {
-				process: function(item) {
-					item.added = 'some-attribute';
-					return item;
-				}
-			})
-				.on('data', function(processed) {
-					var processedDataCorrect = _.every(processed, function(item) {
-						return _.has(item, 'something') && _.has(item, 'added');
-					});
-					expect(processedDataCorrect).to.equal(true);
-					done();
+			it('modifies item as expected', function(done) {
+
+				var name = 'process';
+				var sampleData = [
+					{ something: '4' },
+					{ something: '5' },
+					{ something: '6' }
+				];
+
+				dataSourcer.addSource(name, {
+					getData: function(options) {
+						var emitter = options.newEventEmitter();
+						_.defer(function() {
+							emitter.emit('data', sampleData);
+						});
+						return emitter;
+					}
 				});
+
+				dataSourcer.getDataFromSource(name, {
+					process: function(item) {
+						item.added = 'some-attribute';
+						return item;
+					}
+				})
+					.on('data', function(processed) {
+						var processedDataCorrect = _.every(processed, function(item) {
+							return _.has(item, 'something') && _.has(item, 'added');
+						});
+						expect(processedDataCorrect).to.equal(true);
+						done();
+					});
+			});
 		});
 	});
 

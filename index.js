@@ -165,14 +165,9 @@ DataSourcer.prototype.addSource = function(name, source) {
 	this.sources[name] = source;
 };
 
-DataSourcer.prototype.close = function(done) {
-
+DataSourcer.prototype.close = function() {
 	if (this.browser) {
-		this.browser.close().then(function() {
-			done();
-		}).catch(done);
-	} else {
-		_.defer(done);
+		this.browser.close();
 	}
 };
 
@@ -266,6 +261,8 @@ DataSourcer.prototype.processData = function(data, fn) {
 DataSourcer.prototype.getData = function(options) {
 
 	var emitter = this.prepareSafeEventEmitter();
+	this.close = this.close.bind(this);
+	emitter.on('end', this.close);
 
 	_.defer(function() {
 

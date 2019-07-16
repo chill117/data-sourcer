@@ -554,7 +554,12 @@ DataSourcer.prototype.sourceExists = function(name) {
 
 DataSourcer.prototype.preparePage = function(done) {
 
-	this.onBrowserReady(function() {
+	if (!_.isFunction(done)) {
+		throw new Error('Missing required callback');
+	}
+
+	this.prepareBrowser(function(error) {
+		if (error) return done(error);
 		this.browser.newPage().then(function(page) {
 			// Assign a random user agent.
 			page.setUserAgent((new UserAgent()).toString()).then(function() {
@@ -562,12 +567,13 @@ DataSourcer.prototype.preparePage = function(done) {
 			}).catch(done);
 		}).catch(done);
 	}.bind(this));
-	this.prepareBrowser();
 };
 
 DataSourcer.prototype.prepareBrowser = function(done) {
 
-	done = done || _.noop;
+	if (!_.isFunction(done)) {
+		throw new Error('Missing required callback');
+	}
 
 	if (this.browser || this.preparingBrowser) {
 		this.onBrowserReady(done);

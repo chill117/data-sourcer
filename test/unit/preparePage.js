@@ -7,10 +7,9 @@ var path = require('path');
 
 var DataSourcer = require('../../index');
 
-describe('preparePage()', function() {
+describe('preparePage(done)', function() {
 
 	var dataSourcer;
-
 	before(function() {
 		dataSourcer = new DataSourcer();
 	});
@@ -43,6 +42,18 @@ describe('preparePage()', function() {
 
 	it('should be a function', function() {
 		expect(dataSourcer.preparePage).to.be.a('function');
+	});
+
+	it('throws error when no callback is provided', function() {
+		var thrownError;
+		try {
+			dataSourcer.preparePage();
+		} catch (error) {
+			thrownError = error;
+		}
+		expect(thrownError).to.not.be.undefined;
+		expect(thrownError instanceof Error).to.equal(true);
+		expect(thrownError.message).to.equal('Missing required callback');
 	});
 
 	it('can get and process html page in the context of a browser', function(done) {

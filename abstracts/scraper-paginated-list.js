@@ -7,7 +7,7 @@ module.exports = {
 	homeUrl: null,
 	defaultOptions: {
 		numPagesToScrape: 10,
-		defaultTimeout: 1000,
+		defaultTimeout: 2000,
 		defaultNavigationTimeout: 30000,
 		viewport: {
 			width: 1280,

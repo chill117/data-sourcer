@@ -255,6 +255,7 @@ describe('abstract.' + abstractName, function() {
 								field1: 'td:nth-child(1)',
 								field2: 'td:nth-child(2)',
 								field3: 'td:nth-child(3)',
+								field4: '.does-not-exist',
 							},
 							nextLink: '#pagination .next',
 						},
@@ -290,6 +291,7 @@ describe('abstract.' + abstractName, function() {
 							expect(item.field2).to.be.a('number');
 							expect(item.field3).to.not.be.undefined;
 							expect(item.field3).to.be.a('string');
+							expect(item.field4).to.be.null;
 						});
 					} catch (error) {
 						return done(error);

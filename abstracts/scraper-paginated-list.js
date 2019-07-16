@@ -183,8 +183,11 @@ module.exports = {
 								Object.keys(config.selectors.itemAttributes).forEach(function(key) {
 									var selector = config.selectors.itemAttributes[key];
 									var attrEl = itemEl.querySelector(selector);
-									if (!attrEl) return;
-									item[key] = attrEl.textContent;
+									if (!attrEl) {
+										item[key] = null;
+									} else {
+										item[key] = attrEl.textContent || '';
+									}
 								});
 								if (Object.keys(item).length > 0) {
 									data.push(item);

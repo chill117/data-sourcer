@@ -82,7 +82,6 @@ describe('abstract.' + abstractName, function() {
 							},
 							nextLink: null,
 						},
-						parseAttributes: {},
 					},
 				},
 			};
@@ -123,7 +122,6 @@ describe('abstract.' + abstractName, function() {
 							},
 							nextLink: null,
 						},
-						parseAttributes: {},
 					},
 				},
 			};
@@ -232,6 +230,62 @@ describe('abstract.' + abstractName, function() {
 					.once('end', function() {
 						try {
 							expect(errorMessage).to.equal('waiting for selector "' + source.definition.config.selectors.item + '" failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded');
+						} catch (error) {
+							return done(error);
+						}
+						done();
+					});
+			});
+
+			it('item attribute element does not exist for some items', function(done) {
+				var source = {
+					name: 'scraper-paginated-list-item-attr-element-does-not-exist-for-some',
+					definition: {
+						homeUrl: baseUrl,
+						abstract: 'scraper-paginated-list',
+						config: {
+							startPageUrl: baseUrl + '/item-attr-elements-missing-for-some-items.html',
+							selectors: {
+								item: '#list table tbody tr',
+								itemAttributes: {
+									field1: 'td:nth-child(1)',
+									field2: 'td:nth-child(2)',
+									field3: 'td:nth-child(3)',
+								},
+								nextLink: '#pagination .next',
+							},
+							parseAttributes: {
+								field2: function(text) {
+									if (!text) return null;
+									return parseInt(text);
+								},
+							},
+						},
+					},
+				};
+				dataSourcer.addSource(source.name, source.definition);
+				done = _.once(done);
+				var options = { sourceOptions: {} };
+				options.sourceOptions[source.name] = {
+					defaultTimeout: 50,
+				};
+				var data = [];
+				dataSourcer.getDataFromSource(source.name, options)
+					.on('data', function(_data) {
+						data.push.apply(data, _data);
+					})
+					.on('error', done)
+					.once('end', function() {
+						try {
+							expect(data).to.not.be.undefined;
+							expect(data).to.be.an('array');
+							expect(data).to.have.length(2);
+							expect(data[0].field1).to.be.a('string');
+							expect(data[0].field2).to.be.a('number');
+							expect(data[0].field3).to.be.a('string');
+							expect(data[1].field1).to.be.a('string');
+							expect(data[1].field2).to.be.null;
+							expect(data[1].field3).to.be.null;
 						} catch (error) {
 							return done(error);
 						}

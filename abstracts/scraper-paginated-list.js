@@ -14,6 +14,15 @@ module.exports = {
 			height: 800,
 		},
 		nextPageDelay: 0,
+		waitForValidData: {
+			test: function(item) {
+				return _.some(item, function(value) {
+					return !_.isNull(value) && !_.isUndefined(value);
+				});
+			},
+			checkFrequency: 50,
+			timeout: 2000,
+		},
 	},
 	config: {
 		startPageUrl: null,
@@ -56,7 +65,7 @@ module.exports = {
 					return onEnd();
 				}
 
-				var scrapeFirstPage = this.goToStartPageAndScrapeData.bind(this, page);
+				var scrapeFirstPage = this.goToStartPageAndScrapeData.bind(this, page, options);
 				var scrapeNextPage = this.goToNextPageAndScrapeData.bind(this, page, options);
 				var numPagesToScrape = options.sourceOptions.numPagesToScrape;
 				if (options.sample) {
@@ -104,16 +113,15 @@ module.exports = {
 		return emitter;
 	},
 
-	goToStartPageAndScrapeData: function(page, done) {
+	goToStartPageAndScrapeData: function(page, options, done) {
 		async.seq(
 			this.goToStartPage.bind(this, page),
-			this.waitForElement.bind(this, page, this.config.selectors.item),
-			this.scrapeData.bind(this, page)
+			this.waitForAllItemRelatedElements.bind(this, page),
+			this.waitForValidData.bind(this, page, options)
 		)(done);
 	},
 
 	goToNextPageAndScrapeData: function(page, options, done) {
-		done = _.once(done);
 		page.$(this.config.selectors.nextLink).then(function(el) {
 			// Next link does not exist - stop here.
 			if (!el) return done();
@@ -122,8 +130,8 @@ module.exports = {
 				function(next) {
 					_.delay(next, options.sourceOptions.nextPageDelay);
 				},
-				this.waitForElement.bind(this, page, this.config.selectors.item),
-				this.scrapeData.bind(this, page)
+				this.waitForAllItemRelatedElements.bind(this, page),
+				this.waitForValidData.bind(this, page, options)
 			)(done);
 		}.bind(this)).catch(done);
 	},
@@ -137,6 +145,32 @@ module.exports = {
 			this.waitForElement.bind(this, page, this.config.selectors.nextLink),
 			this.clickElement.bind(this, page, this.config.selectors.nextLink)
 		)(done);
+	},
+
+	waitForAllItemRelatedElements: function(page, done) {
+		async.parallel([
+			this.waitForItemElements.bind(this, page),
+			this.waitForItemAttributeElements.bind(this, page),
+		], function(error) {
+			if (error) return done(error);
+			done();
+		});
+	},
+
+	waitForItemElements: function(page, done) {
+		this.waitForElement(page, this.config.selectors.item, done);
+	},
+
+	waitForItemAttributeElements: function(page, done) {
+		var tasks = _.map(this.config.selectors.itemAttributes, function(attributeSelector) {
+			return function(next) {
+				var selector = this.config.selectors.item + ' ' + attributeSelector;
+				page.waitFor(selector).then(function() {
+					next();
+				}).catch(next);
+			}.bind(this);
+		}, this);
+		async.race(tasks, done)
 	},
 
 	waitForElement: function(page, selector, done) {
@@ -168,35 +202,73 @@ module.exports = {
 		});
 	},
 
+	waitForValidData: function(page, options, done) {
+		var startTime = Date.now();
+		var scrapedData;
+		async.until(function(next) {
+			try {
+				var elapsedTime = Date.now() - startTime;
+				if (elapsedTime >= options.sourceOptions.waitForValidData.timeout) {
+					return next(new Error('Timed out while waiting for valid data'));
+				}
+				this.scrapeData(page, function(error, data) {
+					if (error) return next(error);
+					try {
+						var hasValidData = _.some(data, function(item) {
+							return options.sourceOptions.waitForValidData.test(item);
+						});
+						if (hasValidData) {
+							scrapedData = data;
+						}
+					} catch (error) {
+						return next(error);
+					}
+					next(null, hasValidData);
+				});
+			} catch (error) {
+				return next(error);
+			}
+		}.bind(this), function(next) {
+			try {
+				_.delay(next, options.sourceOptions.waitForValidData.checkFrequency);
+			} catch (error) {
+				return next(error);
+			}
+		}.bind(this), function(error) {
+			if (error) return done(error);
+			done(null, scrapedData);
+		});
+	},
+
 	scrapeData: function(page, done) {
 		var config = this.config;
-		done = _.once(done || _.noop);
 		page.evaluate(function(config) {
 			return new Promise(function(resolve, reject) {
 				try {
 					var data = [];
 					var itemEls = document.querySelectorAll(config.selectors.item);
-					if (itemEls) {
-						for (var index = 0; index < itemEls.length; index++) {
-							(function(itemEl) {
-								var item = {};
-								Object.keys(config.selectors.itemAttributes).forEach(function(key) {
-									var selector = config.selectors.itemAttributes[key];
-									var attrEl = itemEl.querySelector(selector);
-									if (!attrEl) {
-										item[key] = null;
-									} else {
-										item[key] = attrEl.textContent || '';
-									}
-								});
-								if (Object.keys(item).length > 0) {
-									data.push(item);
+					if (!itemEls) {
+						throw new Error('Could not find item elements (selector: "' + config.selectors.item + '")');
+					}
+					for (var index = 0; index < itemEls.length; index++) {
+						(function(itemEl) {
+							var item = {};
+							Object.keys(config.selectors.itemAttributes).forEach(function(key) {
+								var selector = config.selectors.itemAttributes[key];
+								var attrEl = itemEl.querySelector(selector);
+								if (!attrEl) {
+									item[key] = null;
+								} else {
+									item[key] = attrEl.textContent || '';
 								}
-							})(itemEls[index]);
-						}
+							});
+							if (Object.keys(item).length > 0) {
+								data.push(item);
+							}
+						})(itemEls[index]);
 					}
 				} catch (error) {
-					return reject(error);
+					return reject(error.message);
 				}
 				return resolve(data);
 			});

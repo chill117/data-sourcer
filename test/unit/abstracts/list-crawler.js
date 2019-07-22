@@ -90,7 +90,6 @@ describe('abstract.' + abstractName, function() {
 				},
 			};
 			dataSourcer.addSource(source.name, source.definition);
-			done = _.once(done);
 			var options = { sourceOptions: {} };
 			options.sourceOptions[source.name] = {
 				defaultTimeout: 50,
@@ -132,7 +131,6 @@ describe('abstract.' + abstractName, function() {
 				},
 			};
 			dataSourcer.addSource(source.name, source.definition);
-			done = _.once(done);
 			var options = { sourceOptions: {} };
 			options.sourceOptions[source.name] = {
 				defaultTimeout: 50,
@@ -180,7 +178,6 @@ describe('abstract.' + abstractName, function() {
 					},
 				};
 				dataSourcer.addSource(source.name, source.definition);
-				done = _.once(done);
 				var options = { sourceOptions: {} };
 				options.sourceOptions[source.name] = {
 					defaultTimeout: 50,
@@ -232,17 +229,81 @@ describe('abstract.' + abstractName, function() {
 				},
 			};
 			dataSourcer.addSource(source.name, source.definition);
-			done = _.once(done);
-			var data;
+			var data = [];
 			dataSourcer.getDataFromSource(source.name)
 				.on('data', function(_data) {
-					data = _data
+					data.push.apply(data, _data);
 				})
 				.on('error', done)
 				.once('end', function() {
 					try {
 						expect(data).to.be.an('array');
-						expect(data).to.have.length(3);
+						expect(data).to.have.length(6);
+						_.each(data, function(item) {
+							expect(item.key).to.not.be.undefined;
+							expect(item.description).to.not.be.undefined;
+							expect(item.value).to.not.be.undefined;
+						});
+					} catch (error) {
+						return done(error);
+					}
+					done();
+				});
+		});
+
+		it('crawls all start URLs even if one fails', function(done) {
+			var source = {
+				name: 'list-crawler-crawls-all-start-urls',
+				definition: {
+					homeUrl: baseUrl,
+					abstract: 'list-crawler',
+					config: {
+						startUrls: [
+							baseUrl + '/does-not-exist.html',
+							baseUrl + '/start-page-0.html',
+						],
+						listLinks: [
+							'#sidebar a:nth-child(1)',
+							'#sidebar a:nth-child(2)',
+						],
+						list: {
+							selector: '#items pre',
+							parse: function(text) {
+								return text.trim().split('\n').map(function(item) {
+									var parts = item.replace(/[\t ]/gi, '').split(',');
+									return {
+										key: parts[0],
+										description: parts[1],
+										value: parts[2],
+									};
+								}).filter(Boolean);
+							},
+						},
+					},
+				},
+			};
+			dataSourcer.addSource(source.name, source.definition);
+			var options = { sourceOptions: {} };
+			options.sourceOptions[source.name] = {
+				defaultTimeout: 50,
+			};
+			var data = [];
+			var errorMessages = [];
+			dataSourcer.getDataFromSource(source.name, options)
+				.on('data', function(_data) {
+					data.push.apply(data, _data);
+				})
+				.on('error', function(error) {
+					errorMessages.push(error.message);
+				})
+				.once('end', function() {
+					try {
+						expect(errorMessages).to.have.length(2);
+						_.each(errorMessages, function(errorMessage) {
+							expect(errorMessage).to.equal('HTTP 404 (' + source.definition.config.startUrls[0] + '): Not Found');
+						});
+						expect(data).to.be.an('array');
+						expect(data).to.have.length(6);
 						_.each(data, function(item) {
 							expect(item.key).to.not.be.undefined;
 							expect(item.description).to.not.be.undefined;
@@ -281,7 +342,6 @@ describe('abstract.' + abstractName, function() {
 					},
 				};
 				dataSourcer.addSource(source.name, source.definition);
-				done = _.once(done);
 				var options = { sourceOptions: {} };
 				options.sourceOptions[source.name] = {
 					defaultTimeout: 50,
@@ -338,7 +398,6 @@ describe('abstract.' + abstractName, function() {
 				},
 			};
 			dataSourcer.addSource(source.name, source.definition);
-			done = _.once(done);
 			var options = { sourceOptions: {} };
 			options.sourceOptions[source.name] = {
 				defaultTimeout: 50,

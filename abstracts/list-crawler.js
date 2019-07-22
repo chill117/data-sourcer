@@ -59,53 +59,49 @@ module.exports = {
 		_.defer(function() {
 
 			options = options || {};
-			options.newPage(function(error, page) {
+			var onData = _.bind(emitter.emit, emitter, 'data');
+			var onError = _.bind(emitter.emit, emitter, 'error');
+			var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
+			var startUrls = this.config.startUrls;
+			var listLinks = this.config.listLinks;
 
-				var onData = _.bind(emitter.emit, emitter, 'data');
-				var onError = _.bind(emitter.emit, emitter, 'error');
-				var onEnd = _.once(_.bind(emitter.emit, emitter, 'end'));
+			if (options.sample) {
+				startUrls = startUrls.slice(0, 2);
+				listLinks = listLinks.slice(0, 2);
+			}
 
-				if (error) {
-					onError(error);
-					return onEnd();
-				}
-
-				try {
-					page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
-					page.setDefaultNavigationTimeout(options.sourceOptions.defaultNavigationTimeout);
-					page.setViewport(options.sourceOptions.viewport);
-				} catch (error) {
-					onError(error);
-					return onEnd();
-				}
-
-				var navigate = this.navigate.bind(this, page);
-				var scrapeListPage = this.scrapeListPage.bind(this, page);
-				var startUrls = this.config.startUrls;
-				var listLinks = this.config.listLinks;
-
-				if (options.sample) {
-					startUrls = startUrls.slice(0, 2);
-					listLinks = listLinks.slice(0, 2);
-				}
-
-				async.eachSeries(listLinks, function(listLink, nextListLink) {
-					async.eachSeries(startUrls, function(startUrl, nextStartUrl) {
-						navigate(startUrl, function(error) {
-							if (error) return nextStartUrl(error);
-							scrapeListPage(listLink, function(error, data) {
-								if (error) return nextStartUrl(error);
+			var asyncMethodName = options.series === true ? 'eachSeries' : 'each';
+			async[asyncMethodName](listLinks, function(listLink, nextListLink) {
+				async[asyncMethodName](startUrls, function(startUrl, nextStartUrl) {
+					options.newPage(function(error, page) {
+						try {
+							page.setDefaultTimeout(options.sourceOptions.defaultTimeout);
+							page.setDefaultNavigationTimeout(options.sourceOptions.defaultNavigationTimeout);
+							page.setViewport(options.sourceOptions.viewport);
+						} catch (error) {
+							return nextStartUrl(error);
+						}
+						this.navigate(page, startUrl, function(error) {
+							if (error) {
+								onError(error);
+								return nextStartUrl();
+							}
+							this.scrapeListPage(page, listLink, function(error, data) {
+								if (error) {
+									onError(error);
+									return nextStartUrl();
+								}
 								if (!_.isEmpty(data)) onData(data);
 								nextStartUrl();
 							});
-						});
-					}, nextListLink);
-				}, function(error) {
-					if (error) onError(error);
-					onEnd();
-				});
+						}.bind(this));
+					}.bind(this));
+				}.bind(this), nextListLink);
+			}.bind(this), function(error) {
+				if (error) onError(error);
+				onEnd();
+			});
 
-			}.bind(this));
 		}.bind(this));
 
 		return emitter;

@@ -194,12 +194,21 @@ module.exports = {
 			}
 			done(error);
 		});
-		page.once('response', function(response) {
+		page.on('response', function(response) {
 			if (response.status() >= 400) {
+				if (this.isCloudFlareResponse(response)) {
+					// Wait for the JavaScript anti-bot feature of CloudFlare to finish...
+					return;
+				}
 				return done(new Error('HTTP ' + response.status() + ' (' + goToUrl + '): ' + response.statusText()));
 			}
 			done();
-		});
+		}.bind(this));
+	},
+
+	isCloudFlareResponse: function(response) {
+		var headers = response.headers();
+		return headers && /cloudflare/i.test(headers.server);
 	},
 
 	waitForValidData: function(page, options, done) {

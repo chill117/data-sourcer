@@ -273,6 +273,51 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 					});
 			});
 		});
+
+		describe('sampleDataLimit', function() {
+
+			it('should not return a greater number of items than set by "sampleDataLimit"', function() {
+
+				var name = 'sample-data-limit';
+				var sampleData = [
+					{ someField: 0 },
+					{ someField: 1 },
+					{ someField: 2 },
+					{ someField: 3 }
+				];
+
+				dataSourcer.addSource(name, {
+					getData: function(options) {
+						var emitter = options.newEventEmitter();
+						_.defer(function() {
+							emitter.emit('data', sampleData);
+							emitter.emit('end');
+						});
+						return emitter;
+					}
+				});
+
+				var options = {
+					sample: true,
+					sampleDataLimit: 3,
+				};
+
+				var receivedData;
+				dataSourcer.getDataFromSource(name, options)
+					.on('data', function(data) {
+						receivedData = data;
+					})
+					.on('end', function() {
+						try {
+							expect(receivedData).to.be.an('array');
+							expect(receivedData).to.have.length(options.sampleDataLimit);
+						} catch (error) {
+							return done(error);
+						}
+						done();
+					});
+			});
+		});
 	});
 
 	describe('requiredOptions', function() {

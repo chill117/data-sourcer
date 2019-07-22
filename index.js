@@ -253,12 +253,21 @@ DataSourcer.prototype.filterData = function(data, options) {
 	});
 };
 
-DataSourcer.prototype.processData = function(data, fn) {
+DataSourcer.prototype.processData = function(data, fn, options) {
+
+	if (!_.isFunction(fn)) {
+		throw new Error('Missing required process function ("fn")');
+	}
+
+	options = options || {};
 
 	return _.chain(data).map(function(item) {
 		item = _.clone(item);
 		item = fn(item);
 		if (!item || !_.isObject(item) || _.isEmpty(item)) return null;
+		if (options.extend) {
+			item = _.extend({}, item, options.extend);
+		}
 		return item;
 	}).compact().value();
 };
@@ -321,6 +330,9 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	}
 
 	options = this.prepareOptions(options, this.options);
+	options = _.defaults(options || {}, {
+		process: _.identity,
+	});
 
 	var source = this.sources[name];
 
@@ -350,18 +362,14 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	var processData = this.processData.bind(this);
 	var emitter = this.prepareSafeEventEmitter();
 
-	var processFn = function(item) {
-		if (options.process) {
-			item = options.process(item) || {};
-		}
-		// Add the 'source' attribute to every item:
-		item.source = name;
-		return item;
-	};
-
 	var onData = function(data) {
 		data || (data = []);
-		data = processData(data, processFn);
+		data = processData(data, options.process, {
+			extend: {
+				// Add the 'source' attribute to every item:
+				source: name,
+			},
+		});
 		data = filterData(data, filterOptions);
 		if (data.length > 0) {
 			if (options.sample && options.sampleDataLimit) {

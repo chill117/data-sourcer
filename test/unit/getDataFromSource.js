@@ -125,6 +125,40 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 			});
 	});
 
+	it('no data with only source', function(done) {
+
+		var name = 'no-data-with-only-source';
+		var sampleData = [
+			{},
+			{},
+		];
+
+		dataSourcer.addSource(name, {
+			getData: function(options) {
+				var emitter = options.newEventEmitter();
+				_.defer(function() {
+					emitter.emit('data', sampleData);
+					emitter.emit('end');
+				});
+				return emitter;
+			}
+		});
+
+		var receivedData;
+		dataSourcer.getDataFromSource(name)
+			.on('data', function(data) {
+				receivedData = data;
+			})
+			.on('end', function() {
+				try {
+					expect(receivedData).to.be.undefined;
+				} catch (error) {
+					return done(error);
+				}
+				done();
+			});
+	});
+
 	it('no empty data', function(done) {
 
 		var name = 'no-empty-data';
@@ -160,7 +194,11 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 				receivedData = data;
 			})
 			.on('end', function() {
-				expect(receivedData).to.be.undefined;
+				try {
+					expect(receivedData).to.be.undefined;
+				} catch (error) {
+					return done(error);
+				}
 				done();
 			});
 	});

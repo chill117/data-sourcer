@@ -114,10 +114,6 @@ module.exports = {
 					}
 					_.each(groups, function(group) {
 						var items = getValueAtPath(group, feed.paths.item) || [];
-						if (options.sample && items.length > 0) {
-							// When sampling, only include the first few items.
-							items = items.slice(0, 10);
-						}
 						items = _.chain(items).map(function(item) {
 							return _.chain(feed.paths.attributes).mapObject(function(path, key) {
 								return getValueAtPath(item, path);

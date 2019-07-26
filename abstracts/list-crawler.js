@@ -3,6 +3,14 @@
 var _ = require('underscore');
 var async = require('async');
 
+var queues = {
+	sync: async.queue(function(task, next) {
+		task.fn(function() {
+			next();
+		});
+	}, 1/* concurrency */),
+};
+
 module.exports = {
 	homeUrl: null,
 	defaultOptions: {
@@ -248,11 +256,20 @@ module.exports = {
 	},
 
 	navigateByClicking: function(page, selector, done) {
-		async.seq(
+		var doNavigateByClicking = async.seq(
+			this.bringPageToFront.bind(this, page),
 			this.waitForElement.bind(this, page, selector),
 			this.ensureLinkTargetSelf.bind(this, page, selector),
 			this.clickElement.bind(this, page, selector)
-		)(done);
+		);
+		queues.sync.push({
+			fn: function(next) {
+				doNavigateByClicking(function(error) {
+					done(error);
+					next();
+				});
+			},
+		});
 	},
 
 	navigateByHardCodedUrl: function(page, uri, done) {
@@ -268,14 +285,16 @@ module.exports = {
 			cb(error);
 		});
 		var onResponse = function(response) {
-			if (response.status() >= 400) {
-				if (this.isCloudFlareResponse(response)) {
-					// Wait for the JavaScript anti-bot feature of CloudFlare to finish...
-					return;
+			if (response.url() === uri) {
+				if (response.status() >= 400) {
+					if (this.isCloudFlareResponse(response)) {
+						// Wait for the JavaScript anti-bot feature of CloudFlare to finish...
+						return;
+					}
+					return cb(new Error('HTTP ' + response.status() + ' (' + uri + '): ' + response.statusText()));
 				}
-				return cb(new Error('HTTP ' + response.status() + ' (' + uri + '): ' + response.statusText()));
+				cb();
 			}
-			cb();
 		}.bind(this);
 		page.on('response', onResponse);
 	},
@@ -302,6 +321,12 @@ module.exports = {
 				resolve();
 			});
 		}, selector).then(function() {
+			done();
+		}).catch(done);
+	},
+
+	bringPageToFront: function(page, done) {
+		page.bringToFront().then(function() {
 			done();
 		}).catch(done);
 	},

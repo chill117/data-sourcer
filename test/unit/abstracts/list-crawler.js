@@ -556,24 +556,34 @@ describe('abstract.' + abstractName, function() {
 			it('FALSE', function(done) {
 
 				var listUrls = [
-					baseUrl + '/items.parse/simple.html',
-					baseUrl + '/items.parse/simple2.html',
+					baseUrl + '/items.parse/start.html',
+					baseUrl + '/items.parse/start.html',
 				];
 
 				var listDefinition = {
-					items: [{
-						selector: '#items pre',
-						parse: function(text) {
-							return text.trim().split('\n').map(function(item) {
-								var parts = item.replace(/[\t ]/gi, '').split(',');
-								return {
-									key: parts[0],
-									description: parts[1],
-									value: parts[2],
-								};
-							}).filter(Boolean);
-						},
-					}],
+					lists: _.map([
+						'#sidebar a:nth-child(1)',
+						'#sidebar a:nth-child(2)',
+					], function(linkSelector) {
+						return {
+							link: {
+								selector: linkSelector,
+							},
+							items: [{
+								selector: '#items pre',
+								parse: function(text) {
+									return text.trim().split('\n').map(function(item) {
+										var parts = item.replace(/[\t ]/gi, '').split(',');
+										return {
+											key: parts[0],
+											description: parts[1],
+											value: parts[2],
+										};
+									}).filter(Boolean);
+								},
+							}],
+						};
+					}),
 				};
 
 				var source = {
@@ -615,7 +625,7 @@ describe('abstract.' + abstractName, function() {
 						try {
 							expect(errorMessages).to.deep.equal([]);
 							expect(data).to.be.an('array');
-							expect(data).to.have.length(6);
+							expect(data).to.have.length(12);
 							_.each(data, function(item) {
 								expect(item.key).to.not.be.undefined;
 								expect(item.description).to.not.be.undefined;

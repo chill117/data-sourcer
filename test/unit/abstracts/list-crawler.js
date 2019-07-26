@@ -549,6 +549,87 @@ describe('abstract.' + abstractName, function() {
 		});
 	});
 
+	describe('options', function() {
+
+		describe('series', function() {
+
+			it('FALSE', function(done) {
+
+				var listUrls = [
+					baseUrl + '/items.parse/simple.html',
+					baseUrl + '/items.parse/simple2.html',
+				];
+
+				var listDefinition = {
+					items: [{
+						selector: '#items pre',
+						parse: function(text) {
+							return text.trim().split('\n').map(function(item) {
+								var parts = item.replace(/[\t ]/gi, '').split(',');
+								return {
+									key: parts[0],
+									description: parts[1],
+									value: parts[2],
+								};
+							}).filter(Boolean);
+						},
+					}],
+				};
+
+				var source = {
+					name: 'list-crawler-series-false',
+					definition: {
+						homeUrl: baseUrl,
+						abstract: 'list-crawler',
+						config: {
+							lists: _.map(listUrls, function(listUrl) {
+								return _.extend({}, listDefinition, {
+									link: {
+										url: listUrl,
+									},
+								});
+							}),
+						},
+					},
+				};
+				dataSourcer.addSource(source.name, source.definition);
+				var options = { sourceOptions: {} };
+				options.sourceOptions[source.name] = {
+					defaultTimeout: 80,
+					series: false,
+					scraping: {
+						frequency: 5,
+						timeout: 80,
+					},
+				};
+				var data = [];
+				var errorMessages = [];
+				dataSourcer.getDataFromSource(source.name, options)
+					.on('data', function(_data) {
+						data.push.apply(data, _data);
+					})
+					.on('error', function(error) {
+						errorMessages.push(error.message);
+					})
+					.once('end', function() {
+						try {
+							expect(errorMessages).to.deep.equal([]);
+							expect(data).to.be.an('array');
+							expect(data).to.have.length(6);
+							_.each(data, function(item) {
+								expect(item.key).to.not.be.undefined;
+								expect(item.description).to.not.be.undefined;
+								expect(item.value).to.not.be.undefined;
+							});
+						} catch (error) {
+							return done(error);
+						}
+						done();
+					});
+			});
+		});
+	})
+
 	describe('links', function() {
 
 		it('missing link element', function(done) {

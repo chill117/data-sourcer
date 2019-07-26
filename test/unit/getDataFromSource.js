@@ -1,6 +1,7 @@
 'use strict';
 
 var _ = require('underscore');
+var async = require('async');
 var expect = require('chai').expect;
 
 var DataSourcer = require('../../index');
@@ -348,5 +349,46 @@ describe('getDataFromSource(name, [options, ]cb)', function() {
 			expect(thrownError).to.not.be.undefined;
 			expect(thrownError.message).to.equal('Missing required option (`sourceOptions.' + name + '.something`): ' + requiredOptions.something);
 		});
+	});
+
+	it('closes all browser pages on end', function(done) {
+
+		var name = 'close-browser-pages-on-end';
+		var pages = [];
+		dataSourcer.addSource(name, {
+			getData: function(options) {
+				var emitter = options.newEventEmitter();
+				_.defer(function() {
+					async.times(2, function(index, next) {
+						options.newPage(next);
+					}, function(error, _pages) {
+						if (error) {
+							emitter.emit('error', error);
+						} else {
+							pages = _pages;
+						}
+						emitter.emit('end');
+					});
+				});
+				return emitter;
+			}
+		});
+
+		var errorMessages = [];
+		dataSourcer.getDataFromSource(name)
+			.on('error', function(error) {
+				errorMessages.push(error.message);
+			})
+			.once('end', function() {
+				try {
+					expect(errorMessages).to.deep.equal([]);
+					_.each(pages, function(page) {
+						expect(page.isClosed()).to.equal(true);
+					});
+				} catch (error) {
+					return done(error);
+				}
+				done();
+			});
 	});
 });

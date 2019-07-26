@@ -350,6 +350,20 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 	}
 
 	var sourceOptions = this.prepareSourceOptions(name, options);
+
+	// Wrap the newPage function so that we can keep an array of all pages created by this source.
+	// Later we will close these pages when the end event is sent.
+	var pages = [];
+	sourceOptions.newPage = (function(newPage) {
+		return function(cb) {
+			newPage(function(error, page) {
+				if (error) return cb(error);
+				pages.push(page);
+				cb(null, page);
+			});
+		};
+	})(sourceOptions.newPage);
+
 	var getData = source[this.options.getDataMethodName].bind(source);
 	var gettingDataEmitter = getData(sourceOptions);
 
@@ -385,7 +399,17 @@ DataSourcer.prototype.getDataFromSource = function(name, options) {
 			gettingDataEmitter.removeAllListeners();
 			gettingDataEmitter = null;
 		}
-		emitter.emit('end');
+		async.each(pages, function(page, next) {
+			if (page.isClosed()) return next();
+			page.close().then(function() {
+				next();
+			}).catch(function(error) {
+				onError(error);
+				next();
+			});
+		}, function() {
+			emitter.emit('end');
+		});
 	});
 
 	gettingDataEmitter

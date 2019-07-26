@@ -12,7 +12,7 @@ var abstractName = 'list-crawler';
 describe('abstract.' + abstractName, function() {
 
 	var dataSourcer;
-	beforeEach(function() {
+	before(function() {
 		dataSourcer = new DataSourcer({
 			// browser: {
 			// 	headless: false,
@@ -67,7 +67,7 @@ describe('abstract.' + abstractName, function() {
 		app = null;
 	});
 
-	afterEach(function(done) {
+	after(function(done) {
 		dataSourcer.close(done);
 	});
 
@@ -325,7 +325,7 @@ describe('abstract.' + abstractName, function() {
 		it('missing all item attributes element', function(done) {
 
 			var source = {
-				name: 'list-crawler-missing-item-attributes-element',
+				name: 'list-crawler-missing-all-item-attributes-element',
 				definition: {
 					homeUrl: baseUrl,
 					abstract: 'list-crawler',
@@ -392,7 +392,7 @@ describe('abstract.' + abstractName, function() {
 		it('missing some item attributes elements', function(done) {
 
 			var source = {
-				name: 'list-crawler-missing-item-attributes-element',
+				name: 'list-crawler-missing-some-item-attributes-element',
 				definition: {
 					homeUrl: baseUrl,
 					abstract: 'list-crawler',

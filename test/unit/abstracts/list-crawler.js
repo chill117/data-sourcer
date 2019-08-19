@@ -22,14 +22,14 @@ describe('abstract.' + abstractName, function() {
 	});
 
 	var samplesDir;
-	beforeEach(function() {
+	before(function() {
 		samplesDir = path.join(__dirname, '..', '..', 'samples', 'abstracts', abstractName);
 	});
 
 	var host = 'localhost', port = 3000;
 	var baseUrl = 'http://' + host + ':' + port;
 	var app;
-	beforeEach(function() {
+	before(function() {
 		app = express();
 		app.server = app.listen(port, host);
 		// Uncomment the following to print HTTP requests.
@@ -61,18 +61,13 @@ describe('abstract.' + abstractName, function() {
 		});
 	});
 
-	var pages;
-	beforeEach(function() {
-		pages = [];
-	});
-
-	afterEach(function() {
-		app.server.close();
-		app = null;
-	});
-
 	after(function(done) {
 		dataSourcer.close(done);
+	});
+
+	after(function() {
+		app.server.close();
+		app = null;
 	});
 
 	it('timeout while loading page', function(done) {

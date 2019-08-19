@@ -80,7 +80,7 @@ describe('close(done)', function() {
 					_.defer(function() {
 						options.request({
 							url: 'http://localhost:3000/timeout',
-							timeout: 40,
+							timeout: 100,
 						}, function() {
 							numResponses++;
 						});
@@ -88,7 +88,10 @@ describe('close(done)', function() {
 					return emitter;
 				}
 			});
-			dataSourcer.getData();
+			var errorMessages = [];
+			dataSourcer.getData().on('error', function(error) {
+				errorMessages.push(error.message);
+			});
 			async.until(function(next) {
 				next(null, _.size(dataSourcer.activeRequests) > 0);
 			}, function(next) {
@@ -98,6 +101,7 @@ describe('close(done)', function() {
 					if (error) return done(error);
 					_.delay(function() {
 						try {
+							expect(errorMessages).to.deep.equal([]);
 							expect(_.size(dataSourcer.activeRequests)).to.equal(0);
 							expect(numResponses).to.equal(0);
 						} catch (error) {

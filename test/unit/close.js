@@ -72,6 +72,7 @@ describe('close(done)', function() {
 
 		it('should be aborted', function(done) {
 
+			var numResponses = 0;
 			dataSourcer.addSource('source-using-request', {
 				homeUrl: 'http://localhost:3000',
 				getData: function(options) {
@@ -79,9 +80,9 @@ describe('close(done)', function() {
 					_.defer(function() {
 						options.request({
 							url: 'http://localhost:3000/timeout',
-							timeout: 50,
+							timeout: 40,
 						}, function() {
-							done(new Error('Request was not aborted'));
+							numResponses++;
 						});
 					});
 					return emitter;
@@ -98,11 +99,12 @@ describe('close(done)', function() {
 					_.delay(function() {
 						try {
 							expect(_.size(dataSourcer.activeRequests)).to.equal(0);
+							expect(numResponses).to.equal(0);
 						} catch (error) {
 							return done(error);
 						}
 						done();
-					}, 50);
+					}, 80);
 				});
 			});
 		});

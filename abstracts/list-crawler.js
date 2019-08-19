@@ -139,7 +139,7 @@ module.exports = {
 						if (!options.beforeEach) return next();
 						options.beforeEach(next);
 					},
-					this.navigateToList.bind(this, page, list)
+					this.navigateToList.bind(this, page, list, options)
 				)(done);
 			}.bind(this);
 
@@ -223,7 +223,7 @@ module.exports = {
 									if (list.link.url) {
 										options.beforeEach = function(cb) {
 											// Navigate back to the list's start URL.
-											navigateToList(page, list, cb);
+											navigateToList(page, list, options, cb);
 										};
 									}
 									crawlLists(page, list.lists, options, next);
@@ -247,9 +247,9 @@ module.exports = {
 		return emitter;
 	},
 
-	navigateToList: function(page, list, done) {
+	navigateToList: function(page, list, options, done) {
 		if (list.link.url) {
-			this.navigateByHardCodedUrl(page, list.link.url, done);
+			this.navigateByHardCodedUrl(page, list.link.url, options, done);
 		} else if (list.link.selector) {
 			this.navigateByClicking(page, list.link.selector, done);
 		}
@@ -272,11 +272,18 @@ module.exports = {
 		});
 	},
 
-	navigateByHardCodedUrl: function(page, uri, done) {
+	navigateByHardCodedUrl: function(page, uri, options, done) {
 		var cb = _.once(function(error) {
+			clearTimeout(timeout);
 			page.off('response', onResponse);
 			done(error);
 		});
+		var timeout;
+		if (options.sourceOptions.defaultNavigationTimeout) {
+			timeout = setTimeout(function() {
+				cb(new Error('Navigation Timeout Exceeded (' + uri + '): ' + options.sourceOptions.defaultNavigationTimeout + 'ms exceeded'));
+			}, options.sourceOptions.defaultNavigationTimeout);
+		}
 		page.goto(uri).catch(function(error) {
 			var match = error.message.match(/Navigation Timeout Exceeded: ([0-9]+[a-z]+) exceeded/i);
 			if (match) {

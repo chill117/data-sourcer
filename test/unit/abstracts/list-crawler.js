@@ -40,6 +40,10 @@ describe('abstract.' + abstractName, function() {
 		app.get('/timeout', function(req, res, next) {
 			// Never respond - to cause a timeout.
 		});
+		app.get('/cloudflare', function(req, res, next) {
+			res.set('Server', 'Cloudflare');
+			// Never respond - to cause a timeout.
+		});
 		app.get('*.html', function(req, res, next) {
 			var filePath = path.join(samplesDir, req.url);
 			fs.readFile(filePath, function(error, contents) {
@@ -167,6 +171,53 @@ describe('abstract.' + abstractName, function() {
 				try {
 					expect(errorMessages).to.deep.equal([
 						'Timed out while waiting for valid data',
+					]);
+					expect(data).to.deep.equal([]);
+				} catch (error) {
+					return done(error);
+				}
+				done();
+			});
+	});
+
+	it('timeout while waiting for CloudFlare', function(done) {
+
+		var source = {
+			name: 'list-crawler-timeout-while-waiting-for-cloudflare',
+			definition: {
+				homeUrl: baseUrl,
+				abstract: 'list-crawler',
+				config: {
+					lists: [
+						{
+							link: {
+								url: baseUrl + '/cloudflare',
+							},
+						},
+					],
+				},
+			},
+		};
+		dataSourcer.addSource(source.name, source.definition);
+		var options = { sourceOptions: {} };
+		options.sourceOptions[source.name] = {
+			defaultTimeout: 80,
+			defaultNavigationTimeout: 100,
+			series: true,
+		};
+		var data = [];
+		var errorMessages = [];
+		dataSourcer.getDataFromSource(source.name, options)
+			.on('data', function(_data) {
+				data.push.apply(data, _data);
+			})
+			.on('error', function(error) {
+				errorMessages.push(error.message);
+			})
+			.once('end', function() {
+				try {
+					expect(errorMessages).to.deep.equal([
+						'Navigation Timeout Exceeded (' + source.definition.config.lists[0].link.url + '): ' + options.sourceOptions[source.name].defaultNavigationTimeout + 'ms exceeded',
 					]);
 					expect(data).to.deep.equal([]);
 				} catch (error) {

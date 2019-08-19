@@ -1,0 +1,38 @@
+<rss xmlns:blogChannel="http://backend.userland.com/blogChannelModule" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+<channel>
+<title>Sample XML document</title>
+<link>http://example.com/something.xml</link>
+<description>
+Description of channel...
+</description>
+<language>en</language>
+<pubDate>Mon, 19 Aug 2019 10:39:01 GMT</pubDate>
+<lastBuildDate>Mon, 19 Aug 2019 10:39:01 GMT</lastBuildDate>
+<item>
+<title>item title 01</title>
+<link>
+http://example.com/sample-item01
+</link>
+<description>
+Sample item description...
+</description>
+<guid isPermaLink="true">
+http://example.com/sample-item01
+</guid>
+<pubDate>Mon, 19 Aug 2019 10:04:44 GMT</pubDate>
+</item>
+<item>
+<title>item title 02</title>
+<link>
+http://example.com/sample-item02
+</link>
+<description>
+Sample item description...
+</description>
+<guid isPermaLink="true">
+http://example.com/sample-item02
+</guid>
+<pubDate>Mon, 19 Aug 2019 10:18:06 GMT</pubDate>
+</item>
+</channel>
+</rss>

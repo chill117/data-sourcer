@@ -18,9 +18,11 @@ var DataSourcer = module.exports = function(options) {
 
 	this.options = this.prepareOptions(options, this.defaultOptions);
 	this.id = _.uniqueId('DataSourcer');
+	this.activeRequests = {};
 	this.sources = {};
 	this.preparingBrowser = false;
 	this.prepareInternalQueues();
+	this.pauseAllQueues();
 
 	if (this.options.sourcesDir) {
 		this.loadSourcesFromDir(this.options.sourcesDir);
@@ -171,6 +173,26 @@ DataSourcer.prototype.addSource = function(name, source) {
 };
 
 DataSourcer.prototype.close = function(done) {
+
+	try {
+		this.pauseAllQueues();
+		this.abortActiveRequests();
+	} catch (error) {
+		return done(error);
+	}
+
+	async.parallel([
+		this.closeBrowser.bind(this),
+	], done);
+};
+
+DataSourcer.prototype.abortActiveRequests = function() {
+
+	_.invoke(this.activeRequests, 'abort');
+	this.activeRequests = {};
+};
+
+DataSourcer.prototype.closeBrowser = function(done) {
 
 	if (this.browser) {
 		this.browser.close().then(function() {
@@ -562,22 +584,28 @@ DataSourcer.prototype.prepareRequestMethod = function(options) {
 	options = options || {};
 	var defaultRequestOptions = _.defaults(options.defaultRequestOptions || {}, this.defaultOptions.defaultRequestOptions);
 	var fn = request.defaults(defaultRequestOptions);
-	var requestQueue = this.prepareRequestQueue(options.requestQueue);
-
+	var queue = this.prepareRequestQueue(options.requestQueue);
 	return function() {
-		requestQueue.push({ fn: fn, arguments: arguments });
+		queue.push({ fn: fn, arguments: arguments });
 	};
 };
 
 DataSourcer.prototype.prepareRequestQueue = function(options) {
 
 	options = _.defaults(options || {}, this.defaultOptions.requestQueue);
-
-	return async.queue(function(task, next) {
-		task.fn.apply(undefined, task.arguments).on('response', function() {
+	var queue = async.queue(function(task, next) {
+		var reqId = _.uniqueId('request');
+		var done = _.once(function() {
+			this.activeRequests[reqId] = null;
 			_.delay(next, options.delay);
-		});
-	}, options.concurrency);
+		}.bind(this));
+		this.activeRequests[reqId] = task.fn.apply(undefined, task.arguments)
+			.on('error', done)
+			.on('response', done);
+	}.bind(this), options.concurrency);
+	var queueId = _.uniqueId('doRequest');
+	this.queues[queueId] = queue;
+	return queue;
 };
 
 DataSourcer.prototype.isValidSourceName = function(name) {
@@ -648,7 +676,7 @@ DataSourcer.prototype.onBrowserReady = function(fn) {
 
 DataSourcer.prototype.prepareInternalQueues = function() {
 
-	var queues = this.queues = {
+	this.queues = {
 		onBrowserReady: async.queue(function(task, next) {
 			try {
 				task.fn();
@@ -657,14 +685,21 @@ DataSourcer.prototype.prepareInternalQueues = function() {
 			}
 			next();
 		}, 1),
+		// doRequest1
+		// doRequest2
+		// ...
 	};
+};
+
+DataSourcer.prototype.pauseAllQueues = function() {
 
 	// Pause all queues.
 	// This prevents execution of queued items until queue.resume() is called.
-	_.invoke(queues, 'pause');
+	_.invoke(this.queues, 'pause');
 };
 
 DataSourcer.prototype.prepareSafeEventEmitter = function() {
+
 	var safeEventEmitter = new SafeEventEmitter();
 	safeEventEmitter.on('error', function(error) {
 		debug.error(error);

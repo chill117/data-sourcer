@@ -17,6 +17,7 @@ var debug = {
 var DataSourcer = module.exports = function(options) {
 
 	this.options = this.prepareOptions(options, this.defaultOptions);
+	this.id = _.uniqueId('DataSourcer');
 	this.sources = {};
 	this.preparingBrowser = false;
 	this.prepareInternalQueues();
@@ -25,6 +26,10 @@ var DataSourcer = module.exports = function(options) {
 		this.loadSourcesFromDir(this.options.sourcesDir);
 	}
 };
+
+DataSourcer.browsers = {};
+DataSourcer.debug = debug;
+DataSourcer.SafeEventEmitter = SafeEventEmitter;
 
 DataSourcer.prototype.defaultOptions = {
 
@@ -169,8 +174,9 @@ DataSourcer.prototype.close = function(done) {
 
 	if (this.browser) {
 		this.browser.close().then(function() {
+			this.browser = DataSourcer.browsers[this.id] = null;
 			done();
-		}).catch(done);
+		}.bind(this)).catch(done);
 	} else {
 		_.defer(done);
 	}
@@ -625,7 +631,7 @@ DataSourcer.prototype.prepareBrowser = function(done) {
 	}
 
 	puppeteer.launch(options).then(function(browser) {
-		this.browser = browser;
+		this.browser = DataSourcer.browsers[this.id] = browser;
 		this.queues.onBrowserReady.resume();
 		done();
 	}.bind(this)).catch(done);
@@ -654,7 +660,6 @@ DataSourcer.prototype.prepareInternalQueues = function() {
 	_.invoke(queues, 'pause');
 };
 
-DataSourcer.prototype.SafeEventEmitter = SafeEventEmitter;
 DataSourcer.prototype.prepareSafeEventEmitter = function() {
 	var safeEventEmitter = new SafeEventEmitter();
 	safeEventEmitter.on('error', function(error) {
@@ -662,3 +667,13 @@ DataSourcer.prototype.prepareSafeEventEmitter = function() {
 	});
 	return safeEventEmitter;
 };
+
+process.on('SIGINT', function() {
+	// NodeJS process interrupted - kill all browser processes.
+	_.chain(DataSourcer.browsers).compact().each(function(browser) {
+		var child = browser.process();
+		if (child) {
+			child.kill();
+		}
+	});
+});

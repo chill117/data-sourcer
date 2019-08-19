@@ -26,7 +26,6 @@
   "dependencies": {
     "async": "3.1.0",
     "debug": "4.1.1",
-    "feedparser": "2.2.9",
     "mkdirp": "0.5.1",
     "puppeteer": "1.18.1",
     "request": "2.88.0",

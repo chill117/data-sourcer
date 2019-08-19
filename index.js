@@ -650,7 +650,11 @@ DataSourcer.prototype.prepareInternalQueues = function() {
 
 	var queues = this.queues = {
 		onBrowserReady: async.queue(function(task, next) {
-			task.fn();
+			try {
+				task.fn();
+			} catch (error) {
+				debug.error(error);
+			}
 			next();
 		}, 1),
 	};

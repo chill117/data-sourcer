@@ -275,7 +275,7 @@ module.exports = {
 	navigateByHardCodedUrl: function(page, uri, options, done) {
 		var cb = _.once(function(error) {
 			clearTimeout(timeout);
-			page.off('response', onResponse);
+			page.removeListener('response', onResponse);
 			done(error);
 		});
 		var timeout;

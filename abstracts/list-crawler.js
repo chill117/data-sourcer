@@ -6,7 +6,7 @@ var async = require('async');
 var queues = {
 	sync: async.queue(function(task, next) {
 		task.fn(function() {
-			next();
+			_.delay(next, 10);
 		});
 	}, 1/* concurrency */),
 };

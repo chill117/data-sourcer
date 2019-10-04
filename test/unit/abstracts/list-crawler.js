@@ -44,6 +44,12 @@ describe('abstract.' + abstractName, function() {
 			res.set('Server', 'Cloudflare');
 			// Never respond - to cause a timeout.
 		});
+		app.get('/cloudflare-500', function(req, res, next) {
+			// set the 'server' header to 'cloudflare' so that the isCloudFlareResponse method returns true
+			res.set('server', 'cloudflare');
+			// return http 500 code error
+			res.sendStatus(500);
+		});
 		app.get('*.html', function(req, res, next) {
 			var filePath = path.join(samplesDir, req.url);
 			fs.readFile(filePath, function(error, contents) {
@@ -213,6 +219,52 @@ describe('abstract.' + abstractName, function() {
 				try {
 					expect(errorMessages).to.deep.equal([
 						'Navigation Timeout Exceeded (' + source.definition.config.lists[0].link.url + '): ' + options.sourceOptions[source.name].defaultNavigationTimeout + 'ms exceeded',
+					]);
+					expect(data).to.deep.equal([]);
+				} catch (error) {
+					return done(error);
+				}
+				done();
+			});
+	});
+
+	it('error when CloudFlare http code is 500', function(done) {
+		var source = {
+			name: 'list-crawler-err-when-cloudflare-500',
+			definition: {
+				homeUrl: baseUrl,
+				abstract: 'list-crawler',
+				config: {
+					lists: [
+						{
+							link: {
+								url: baseUrl + '/cloudflare-500',
+							},
+						},
+					],
+				},
+			},
+		};
+		dataSourcer.addSource(source.name, source.definition);
+		var options = { sourceOptions: {} };
+		options.sourceOptions[source.name] = {
+			defaultTimeout: 80,
+			defaultNavigationTimeout: 100,
+			series: true,
+		};
+		var data = [];
+		var errorMessages = [];
+		dataSourcer.getDataFromSource(source.name, options)
+			.on('data', function(_data) {
+				data.push.apply(data, _data);
+			})
+			.on('error', function(error) {
+				errorMessages.push(error.message);
+			})
+			.once('end', function() {
+				try {
+					expect(errorMessages).to.deep.equal([
+						'HTTP 500 (' + source.definition.config.lists[0].link.url + '): Internal Server Error',
 					]);
 					expect(data).to.deep.equal([]);
 				} catch (error) {

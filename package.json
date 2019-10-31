@@ -27,16 +27,16 @@
     "async": "3.1.0",
     "debug": "4.1.1",
     "mkdirp": "0.5.1",
-    "puppeteer": "1.18.1",
+    "puppeteer": "2.0.0",
     "request": "2.88.0",
     "underscore": "1.9.1",
-    "user-agents": "1.0.314",
-    "xml2js": "0.4.19"
+    "user-agents": "1.0.426",
+    "xml2js": "0.4.22"
   },
   "devDependencies": {
     "chai": "4.2.0",
-    "eslint": "6.0.1",
+    "eslint": "6.6.0",
     "express": "4.17.1",
-    "mocha": "6.1.4"
+    "mocha": "6.2.2"
   }
 }

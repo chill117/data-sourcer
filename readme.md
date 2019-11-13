@@ -2,7 +2,7 @@
 
 Get (and filter) data from multiple different data sources quickly and efficiently.
 
-[![Build Status](https://travis-ci.org/chill117/data-sourcer.svg?branch=master)](https://travis-ci.org/chill117/data-sourcer) [![Status of Dependencies](https://david-dm.org/chill117/data-sourcer.svg)](https://david-dm.org/chill117/data-sourcer)
+[![Build Status](https://travis-ci.org/chill117/data-sourcer.svg?branch=master)](https://travis-ci.org/chill117/data-sourcer)
 
 * [Installation](#installation)
 * [API](#api)

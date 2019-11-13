@@ -293,8 +293,9 @@ module.exports = {
 		});
 		var onResponse = function(response) {
 			if (response.url() === uri) {
-				if (response.status() >= 400) {
-					if (this.isCloudFlareResponse(response)) {
+				var responseStatus = response.status();
+				if (responseStatus >= 400) {
+					if (responseStatus < 500 && this.isCloudFlareResponse(response)) {
 						// Wait for the JavaScript anti-bot feature of CloudFlare to finish...
 						return;
 					}
@@ -438,7 +439,7 @@ module.exports = {
 			}.bind(this), function(error) {
 				if (error) return done(error);
 				done(null, scrapedData);
-			});	
+			});
 		} catch (error) {
 			return done(error);
 		}
@@ -469,7 +470,7 @@ module.exports = {
 											data.push(item);
 										}
 									} else {
-										data.push(itemEl.textContent);	
+										data.push(itemEl.textContent);
 									}
 								})(itemEls[index]);
 							}

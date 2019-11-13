@@ -30,7 +30,7 @@
     "puppeteer": "2.0.0",
     "request": "2.88.0",
     "underscore": "1.9.1",
-    "user-agents": "1.0.426",
+    "user-agents": "1.0.439",
     "xml2js": "0.4.22"
   },
   "devDependencies": {

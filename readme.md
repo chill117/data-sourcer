@@ -9,8 +9,9 @@ Get (and filter) data from multiple different data sources quickly and efficient
   * [getData](#getdata)
   * [listSources](#listsources)
 * [Defining Sources](#defining-sources)
-* [Contributing](#contributing)
 * [Tests](#tests)
+* [Changelog](#changelog)
+* [License](#license)
 
 
 ## Installation
@@ -297,22 +298,17 @@ Options that are passed to your sources:
 * __sourceOptions__ `object` - These are custom source options which are passed through to your source by name. You can use the `requiredOptions` source attribute to define which options are required for your source to run properly. Some example of a required option would be an API key or secret for some third-party web API.
 
 
-## Contributing
-
-There are a number of ways you can contribute:
-
-* **Improve or correct the documentation** - All the documentation is in this `readme.md` file. If you see a mistake, or think something should be clarified or expanded upon, please [submit a pull request](https://github.com/chill117/data-sourcer/pulls/new)
-* **Report a bug** - Please review [existing issues](https://github.com/chill117/data-sourcer/issues) before submitting a new one; to avoid duplicates. If you can't find an issue that relates to the bug you've found, please [create a new one](https://github.com/chill117/data-sourcer/issues).
-* **Request a feature** - Again, please review the [existing issues](https://github.com/chill117/data-sourcer/issues) before posting a feature request. If you can't find an existing one that covers your feature idea, please [create a new one](https://github.com/chill117/data-sourcer/issues).
-* **Fix a bug** - Have a look at the [existing issues](https://github.com/chill117/data-sourcer/issues) for the project. If there's a bug in there that you'd like to tackle, please feel free to do so. I would ask that when fixing a bug, that you first create a failing test that proves the bug. Then to fix the bug, make the test pass. This should hopefully ensure that the bug never creeps into the project again. After you've done all that, you can [submit a pull request](https://github.com/chill117/data-sourcer/pulls/new) with your changes.
-
-
 ## Tests
 
 To run all tests:
 ```
 npm test
 ```
+
+
+## Changelog
+
+See [changelog.md](https://github.com/chill117/express-mysql-session/blob/master/changelog.md)
 
 
 ## License

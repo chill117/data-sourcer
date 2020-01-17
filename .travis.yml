@@ -13,4 +13,3 @@ env:
   - TRAVIS_CI=1
 
 install: npm install
-script: skip

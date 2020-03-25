@@ -2,7 +2,6 @@
 
 var _ = require('underscore');
 var fs = require('fs');
-var mkdirp = require('mkdirp');
 var path = require('path');
 
 var directories = {
@@ -13,7 +12,7 @@ directories.abstracts = path.join(directories.tmp, 'abstracts');
 module.exports = {
 	directories: directories,
 	createTestAbstract: function(name, abstract, cb) {
-		mkdirp(directories.abstracts, function(error) {
+		fs.mkdir(directories.abstracts, { recursive: true }, function(error) {
 			if (error) return cb(error);
 			var filePath = path.join(directories.abstracts, name + '.js');
 			var content;

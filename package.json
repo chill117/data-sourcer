@@ -19,6 +19,10 @@
     "email": "chill@degreesofzero.com"
   },
   "license": "MIT",
+  "funding": {
+    "type" : "individual",
+    "url" : "https://degreesofzero.com/donate.html?project=data-sourcer"
+  },
   "readmeFilename": "readme.md",
   "bugs": {
     "url": "https://github.com/chill117/data-sourcer/issues"

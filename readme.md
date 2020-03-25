@@ -9,9 +9,12 @@ Get (and filter) data from multiple different data sources quickly and efficient
   * [getData](#getdata)
   * [listSources](#listsources)
 * [Defining Sources](#defining-sources)
-* [Tests](#tests)
+* [Contributing](#contributing)
+	* [Configure Local Environment](#configure-local-environment)
+	* [Tests](#tests)
 * [Changelog](#changelog)
 * [License](#license)
+* [Funding](#funding)
 
 
 ## Installation
@@ -298,20 +301,58 @@ Options that are passed to your sources:
 * __sourceOptions__ `object` - These are custom source options which are passed through to your source by name. You can use the `requiredOptions` source attribute to define which options are required for your source to run properly. Some example of a required option would be an API key or secret for some third-party web API.
 
 
-## Tests
 
-To run all tests:
+
+## Contributing
+
+There are a number of ways you can contribute:
+
+* **Improve or correct the documentation** - All the documentation is in this readme file. If you see a mistake, or think something should be clarified or expanded upon, please [submit a pull request](https://github.com/chill117/data-sourcer/pulls/new)
+* **Report a bug** - Please review [existing issues](https://github.com/chill117/data-sourcer/issues) before submitting a new one; to avoid duplicates. If you can't find an issue that relates to the bug you've found, please [create a new one](https://github.com/chill117/data-sourcer/issues).
+* **Request a feature** - Again, please review the [existing issues](https://github.com/chill117/data-sourcer/issues) before posting a feature request. If you can't find an existing one that covers your feature idea, please [create a new one](https://github.com/chill117/data-sourcer/issues).
+* **Fix a bug** - Have a look at the [existing issues](https://github.com/chill117/data-sourcer/issues) for the project. If there's a bug in there that you'd like to tackle, please feel free to do so. I would ask that when fixing a bug, that you first create a failing test that proves the bug. Then to fix the bug, make the test pass. This should hopefully ensure that the bug never creeps into the project again. After you've done all that, you can [submit a pull request](https://github.com/chill117/data-sourcer/pulls/new) with your changes.
+
+Before you contribute code, please read through at least some of the source code for the project. I would appreciate it if any pull requests for source code changes follow the coding style of the rest of the project.
+
+Now if you're still interested, you'll need to get your local environment configured.
+
+
+### Configure Local Environment
+
+#### Step 1: Get the Code
+
+First, you'll need to pull down the code from GitHub:
 ```
+git clone https://github.com/chill117/data-sourcer.git
+```
+
+#### Step 2: Install Dependencies
+
+Second, you'll need to install the project dependencies as well as the dev dependencies. To do this, simply run the following from the directory you created in step 1:
+```bash
+npm install
+```
+
+
+### Tests
+
+This project includes an automated regression test suite. To run the tests:
+```bash
 npm test
 ```
 
 
 ## Changelog
 
-See [changelog.md](https://github.com/chill117/express-mysql-session/blob/master/changelog.md)
+See [changelog.md](https://github.com/chill117/data-sourcer/blob/master/changelog.md)
 
 
 ## License
 
 This software is [MIT licensed](https://tldrlegal.com/license/mit-license):
 > A short, permissive software license. Basically, you can do whatever you want as long as you include the original copyright and license notice in any copy of the software/source.  There are many variations of this license in use.
+
+
+## Funding
+
+This project is free and open-source. If you would like to show your appreciation by helping to fund the project's continued development and maintenance, you can find available options [here](https://degreesofzero.com/donate.html?project=data-sourcer).

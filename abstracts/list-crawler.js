@@ -247,12 +247,50 @@ module.exports = {
 		return emitter;
 	},
 
-	navigateToList: function(page, list, options, done) {
-		if (list.link.url) {
-			this.navigateByHardCodedUrl(page, list.link.url, options, done);
-		} else if (list.link.selector) {
-			this.navigateByClicking(page, list.link.selector, done);
+	evaluateInPageContext: function(page, fn, args, done) {
+		if (!_.isFunction(fn)) {
+			return done(new Error('Invalid argument ("fn"): Function expected.'));
 		}
+		if (_.isFunction(args)) {
+			done = args;
+			args = null;
+		}
+		args = args || [];
+		try {
+			_.each(args, function(arg) {
+				if (JSON.parse(JSON.stringify(arg)) !== arg) {
+					throw new Error('Arguments passed to page context must be JSON serializable.');
+				}
+			});
+		} catch (error) {
+			return done(error);
+		}
+		page.waitForNavigation().then(function() {
+			return page.evaluate.apply(page, [fn].concat(args)).then(function() {
+				done();
+			});
+		}).catch(done);
+	},
+
+	navigateToList: function(page, list, options, done) {
+		var evaluateInPageContext = this.evaluateInPageContext.bind(this);
+		var navigateByHardCodedUrl = this.navigateByHardCodedUrl.bind(this);
+		var navigateByClicking = this.navigateByClicking.bind(this);
+		async.seq(
+			function(next) {
+				if (!list.link.evaluate) return next();
+				var fn = list.link.evaluate.fn;
+				var args = list.link.evaluate.args;
+				evaluateInPageContext(page, fn, args, next);
+			},
+			function(next) {
+				if (list.link.url) {
+					navigateByHardCodedUrl(page, list.link.url, options, next);
+				} else if (list.link.selector) {
+					navigateByClicking(page, list.link.selector, next);
+				}
+			}
+		)(done);
 	},
 
 	navigateByClicking: function(page, selector, done) {

@@ -274,6 +274,94 @@ describe('abstract.' + abstractName, function() {
 			});
 	});
 
+	describe('link.evaluate', function() {
+
+		it('can evaluate code in page context', function(done) {
+
+			var source = {
+				name: 'list-crawler-link-evaluate',
+				definition: {
+					homeUrl: baseUrl,
+					abstract: 'list-crawler',
+					config: {
+						lists: [
+							{
+								link: {
+									url: baseUrl + '/link-evaluate.html',
+								},
+								lists: [
+									{
+										link: {
+											evaluate: {
+												fn: function(url) {
+													var anchor = document.createElement('a');
+													anchor.setAttribute('href', url);
+													anchor.setAttribute('id', 'added-by-evaluate');
+													anchor.innerHTML = 'link added via evaluate';
+													document.body.appendChild(anchor);
+												},
+												args: [ baseUrl + '/items.parse/simple.html' ],
+											},
+											selector: '#added-by-evaluate',
+										},
+										items: [{
+											selector: '#items pre',
+											parse: function(text) {
+												return text.trim().split('\n').map(function(item) {
+													var parts = item.replace(/[\t ]/gi, '').split(',');
+													return {
+														key: parts[0],
+														description: parts[1],
+														value: parts[2],
+													};
+												}).filter(Boolean);
+											},
+										}],
+									},
+								],
+							},
+						],
+					},
+				},
+			};
+			this.timeout(50000);
+			dataSourcer.addSource(source.name, source.definition);
+			var options = { sourceOptions: {} };
+			options.sourceOptions[source.name] = {
+				defaultTimeout: 50000,
+				series: true,
+				scraping: {
+					frequency: 5,
+					timeout: 80,
+				},
+			};
+			var data = [];
+			var errorMessages = [];
+			dataSourcer.getDataFromSource(source.name, options)
+				.on('data', function(_data) {
+					data.push.apply(data, _data);
+				})
+				.on('error', function(error) {
+					errorMessages.push(error.message);
+				})
+				.once('end', function() {
+					try {
+						expect(errorMessages).to.deep.equal([]);
+						expect(data).to.be.an('array');
+						expect(data).to.have.length(3);
+						_.each(data, function(item) {
+							expect(item.key).to.not.be.undefined;
+							expect(item.description).to.not.be.undefined;
+							expect(item.value).to.not.be.undefined;
+						});
+					} catch (error) {
+						return done(error);
+					}
+					done();
+				});
+		});
+	});
+
 	describe('items.parse', function() {
 
 		it('missing items element', function(done) {

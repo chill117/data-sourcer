@@ -1,5 +1,7 @@
 # Changelog
 
+* v1.10.1:
+  * Updated deps
 * v1.10.0:
   * Added link.evaluate to list-crawler abstract
   * Updated dependencies

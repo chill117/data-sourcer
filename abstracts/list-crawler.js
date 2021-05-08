@@ -378,7 +378,7 @@ module.exports = {
 	},
 
 	waitForElement: function(page, selector, done) {
-		page.waitFor(selector).then(function() {
+		page.waitForSelector(selector).then(function() {
 			done();
 		}).catch(done);
 	},
@@ -404,7 +404,7 @@ module.exports = {
 			var tasks = _.map(list.items, function(items) {
 				var selector = items.selector;
 				return function(next) {
-					page.waitFor(selector).then(function() {
+					page.waitForSelector(selector).then(function() {
 						next();
 					}).catch(next);
 				};
@@ -426,7 +426,7 @@ module.exports = {
 			selectors = [].concat.apply([], selectors);
 			var tasks = _.map(selectors, function(selector) {
 				return function(next) {
-					page.waitFor(selector).then(function() {
+					page.waitForSelector(selector).then(function() {
 						next();
 					}).catch(next);
 				};

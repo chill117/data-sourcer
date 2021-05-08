@@ -62,7 +62,7 @@ describe('preparePage(done)', function() {
 			expect(error).to.equal(null);
 			expect(page).to.be.an('object');
 			page.goto(baseUrl + '/test.html').then(function() {
-				page.waitFor('.list:not(:empty)').then(function() {
+				page.waitForSelector('.list:not(:empty)').then(function() {
 					page.evaluate(function() {
 						var proxies = [];
 						var itemEls = document.querySelectorAll('.list li');

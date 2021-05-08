@@ -415,7 +415,7 @@ describe('abstract.' + abstractName, function() {
 				.once('end', function() {
 					try {
 						expect(errorMessages).to.deep.equal([
-							'waiting for selector "' + source.definition.config.lists[0].lists[0].items[0].selector + '" failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
+							'waiting for selector `' + source.definition.config.lists[0].lists[0].items[0].selector + '` failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
 						]);
 						expect(data).to.deep.equal([]);
 					} catch (error) {
@@ -565,7 +565,7 @@ describe('abstract.' + abstractName, function() {
 				.once('end', function() {
 					try {
 						expect(errorMessages).to.deep.equal([
-							'waiting for selector "' + source.definition.config.lists[0].lists[0].items[0].selector + ' ' + source.definition.config.lists[0].lists[0].items[0].attributes[0].selector + '" failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
+							'waiting for selector `' + source.definition.config.lists[0].lists[0].items[0].selector + ' ' + source.definition.config.lists[0].lists[0].items[0].attributes[0].selector + '` failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
 						]);
 						expect(data).to.deep.equal([]);
 					} catch (error) {
@@ -875,7 +875,7 @@ describe('abstract.' + abstractName, function() {
 				.once('end', function() {
 					try {
 						expect(errorMessages).to.deep.equal([
-							'waiting for selector "' + source.definition.config.lists[0].lists[0].link.selector + '" failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
+							'waiting for selector `' + source.definition.config.lists[0].lists[0].link.selector + '` failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
 						]);
 						expect(data).to.deep.equal([]);
 					} catch (error) {
@@ -937,8 +937,8 @@ describe('abstract.' + abstractName, function() {
 				.once('end', function() {
 					try {
 						expect(errorMessages).to.deep.equal([
-							'waiting for selector "' + source.definition.config.lists[0].lists[0].link.selector + '" failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
-							'waiting for selector "' + source.definition.config.lists[0].lists[1].link.selector + '" failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
+							'waiting for selector `' + source.definition.config.lists[0].lists[0].link.selector + '` failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
+							'waiting for selector `' + source.definition.config.lists[0].lists[1].link.selector + '` failed: timeout ' + options.sourceOptions[source.name].defaultTimeout + 'ms exceeded',
 						]);
 						expect(data).to.deep.equal([]);
 					} catch (error) {

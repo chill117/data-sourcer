@@ -1,5 +1,7 @@
 # Changelog
 
+* v1.10.2:
+  * Upgraded dependencies
 * v1.10.1:
   * Updated deps
 * v1.10.0:

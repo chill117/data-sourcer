@@ -1,9 +1,11 @@
 # Changelog
 
+* v1.10.3:
+  * Upgraded dependencies
 * v1.10.2:
   * Upgraded dependencies
 * v1.10.1:
-  * Updated deps
+  * Upgraded dependencies
 * v1.10.0:
   * Added link.evaluate to list-crawler abstract
   * Updated dependencies

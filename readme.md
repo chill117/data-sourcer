@@ -2,7 +2,7 @@
 
 Get (and filter) data from multiple different data sources quickly and efficiently.
 
-[![Build Status](https://travis-ci.org/chill117/data-sourcer.svg?branch=master)](https://travis-ci.org/chill117/data-sourcer)
+![Build Status](https://github.com/chill117/data-sourcer/actions/workflows/ci.yml/badge.svg)
 
 * [Installation](#installation)
 * [API](#api)

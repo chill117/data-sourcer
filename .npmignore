@@ -1,5 +1,5 @@
+test/
+.github/workflows/
 .eslintrc.js
 .gitignore
 .npmignore
-.travis.yml
-test/
